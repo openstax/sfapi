@@ -1,67 +1,57 @@
 from typing import Any
-from salesforce.functions import get_contact, get_adoptions
+import json
+import datetime
+import pytz
+from django.core import serializers
 
-from ninja import NinjaAPI, Schema
-from ninja.security import django_auth, HttpBearer
+from openstax_salesforce.models import Adoption, Contact, Account, Book
+from accounts.functions import get_logged_in_user_uuid
+
+from ninja import NinjaAPI
 
 api = NinjaAPI()
 
-class AuthBearer(HttpBearer):
-    def authenticate(self, request, token):
-        if token == "supersecret":
-            return token
+@api.get("/contact", response={frozenset({200, 401, 404}): Any})
+def user(request):
+    user_uuid = get_logged_in_user_uuid(request)
+    if not user_uuid:
+        return 401, {"message": "User is not authenticated."}
 
-class UserSchema(Schema):
-    username: str
-    is_authenticated: bool
-    email: str = None
-    first_name: str = None
-    last_name: str = None
+    try:
+        contact = Contact.objects.get(accounts_uuid=user_uuid)
+    except Contact.DoesNotExist:
+        return 404, {"message": "User does not have a valid Salesforce Contact."}
+    return {"contact": json.loads(serializers.serialize('json', [contact]))}
 
-class Error(Schema):
-    message: str
+@api.get("/adoptions", response={frozenset({200, 400, 401, 404}): Any})
+def adoptions(request, confirmed: bool = False, assumed: bool = False):
+    user_uuid = get_logged_in_user_uuid(request)
+    if not user_uuid:
+        return 401, {"message": "User is not authenticated."}
 
-@api.get("/me", response=UserSchema, auth=django_auth)
-def me(request):
-    return request.user
-
-@api.get("/bearer", response=UserSchema, auth=AuthBearer())
-def bearer(request):
-    return {"token": request.auth}
-
-# @api.get("/contact/{uuid}")
-# def contact_detail(request, uuid: str):
-#     contact = get_contact(accounts_uuid=uuid)
-#     if not contact:
-#         return 404, {"message": "User not found."}
-#     return contact
-
-# @api.get("/contact/{contact_id}")
-# def contact_detail(request, contact_id: str):
-#     contact = get_contact(contact_id=contact_id)
-#     if not contact:
-#         return 404, {"message": "User not found."}
-#     return contact
-
-
-my_codes = frozenset({200, 400, 403, 404})
-
-
-@api.get("/adoptions/{uuid}", response={my_codes: Any})
-def adoptions(request, uuid: str):
-    if not uuid:
-        return 400, {"message": "Contact ID is required."}
-    contact = get_contact(accounts_uuid=uuid)
+    contact = Contact.objects.get(accounts_uuid=user_uuid)
     if not contact:
         return 404, {"message": "User does not have a valid Salesforce Contact."}
-    contact_adoptions = get_adoptions(contact['Id'])
+
+    contact_adoptions = Adoption.objects.filter(contact=contact)
+    if confirmed:
+        contact_adoptions = contact_adoptions.filter(confirmation_type="OpenStax Confirmed Adoption")
+    if assumed:
+        contact_adoptions = contact_adoptions.exclude(confirmation_type="OpenStax Confirmed Adoption")
+
     if not contact_adoptions:
-        return 404, {"message": "Adoptions not found."}
-    return {"adoptions": contact_adoptions}
+        return 404, {"message": "No adoptions found."}
 
+    return {"adoptions": json.loads(serializers.serialize('json', contact_adoptions))}
 
-@api.get("/adoptions/{contact_id}/{adoption_id}")
-def adoption_detail(request, adoption_id: int):
-    # adoption = next((adoption for adoption in adoption_dict if adoption['id'] == id), None)
-
-    return {"adoption": []}
+# TODO: not working
+@api.get("/contacts/{days}", response={frozenset({200, 400, 404}): Any})
+def contacts(request, days: int):
+    if not days:
+        return 400, {"message": "Period is required."}
+    start = datetime.datetime.now(pytz.UTC)
+    end = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=days)
+    contacts = Contact.objects.filter(last_activity_date__gte=start, last_activity_date__lte=end)
+    if not contacts:
+        return 404, {"message": f'No contacts updated in the last {days} days.'}
+    return {"contacts": contacts}
