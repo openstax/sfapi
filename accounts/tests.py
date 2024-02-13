@@ -2,7 +2,7 @@ from django.test import TestCase, Client
 from django.core.handlers.base import BaseHandler
 from django.test.client import RequestFactory
 
-from accounts.functions import decrypt_cookie, get_logged_in_user_id, get_logged_in_user_uuid
+from accounts.functions import decrypt_cookie, get_logged_in_user_uuid
 from http import cookies
 
 class RequestMock(RequestFactory):
@@ -26,16 +26,11 @@ class AccountsTestCase(TestCase):
         decrypted_cookie = decrypt_cookie(self.sso_cookie)
         self.assertEqual(decrypted_cookie.user_uuid, '467cea6c-8159-40b1-90f1-e9b0dc26344c')
 
-    def test_can_bypass_cookie_checks(self):
-        mock = RequestMock()
-        user_id = get_logged_in_user_id(mock.request, bypass_sso_cookie_check=True)
-        self.assertEqual(user_id, -1) #bypassed cookie checks return -1 for a user id
-
     def test_can_get_logged_in_user_uuid(self):
         biscuits = cookies.SimpleCookie()
         biscuits['oxa'] = self.sso_cookie
         self.client.cookies = biscuits
         response = self.client.get('/admin')
         request = response.wsgi_request
-        uuid = get_logged_in_user_uuid(request, bypass_sso_cookie_check=False)
+        uuid = get_logged_in_user_uuid(request)
         self.assertEqual(uuid, '467cea6c-8159-40b1-90f1-e9b0dc26344c')

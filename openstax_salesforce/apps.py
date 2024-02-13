@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class SalesforceConfig(AppConfig):
+class OpenstaxSalesforceConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'salesforce'
+    name = 'openstax_salesforce'
