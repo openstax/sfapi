@@ -1,0 +1,93 @@
+import datetime
+from typing import List, Optional
+from ninja import Field, Schema
+
+# The schema for the response of endpoints are here
+# The fields set here will be for validation (if creating), serialization, and /api/docs
+# Schema returning multiple objects contain a parent Schema with the fields, and a child Schema with a count and objects
+
+# General schema for errors returned by the API
+class Message(Schema):
+    message: str
+
+########
+# Books#
+########
+class BookSchema(Schema):
+    id: str
+    name: str = Field(description="The name of the book.")
+    official_name: str
+    type: Optional[str] = Field(description="The type of the book.")
+    subject_areas: Optional[str]
+
+class BooksSchema(Schema):
+    count: int
+    books: List[BookSchema]
+
+############
+# Accounts #
+############
+class AccountSchema(Schema):
+    id: str
+    name: str
+    type: Optional[str]
+    country: Optional[str] = Field(alias="billing_country")
+    state: Optional[str] = Field(alias="billing_state")
+    city: Optional[str] = Field(alias="billing_state")
+    postal_code: Optional[str] = Field(alias="billing_postal_code")
+    website: Optional[str]
+    books_adopted: Optional[str]
+    ipeds_id: Optional[str]
+    nces_id: Optional[str]
+    lms: Optional[str]
+    sheer_id_school_name: Optional[str]
+
+class AccountsSchema(Schema):
+    count: int
+    limit: int
+    offset: int
+    schools: List[AccountSchema]
+
+
+############
+# Contacts #
+############
+class ContactSchema(Schema):
+    id: str
+    first_name: str
+    last_name: str
+    full_name: str
+    school: AccountSchema = Field(alias="account")
+    role: Optional[str]
+    position: Optional[str]
+    adoption_status: Optional[str]
+    subject_interest: Optional[str]
+    lms: Optional[str]
+    accounts_uuid: str
+    verification_status: Optional[str]
+    signup_date: Optional[datetime.datetime]
+    lead_source: Optional[str]
+    adoptions_json: Optional[str]
+
+class ContactsSchema(Schema):
+    count: int
+    contacts: List[ContactSchema]
+
+#############
+# Adoptions #
+#############
+class AdoptionSchema(Schema):
+    id: str
+    # contact: ContactSchema
+    book: BookSchema = Field(alias="opportunity.book")
+    base_year: Optional[int]
+    school_year: Optional[str]
+    school: str = Field(alias="opportunity.account.name")
+    confirmation_type: Optional[str]
+    students: Optional[int]
+    how_using: Optional[str]
+    confirmation_date: datetime.date
+
+class AdoptionsSchema(Schema):
+    count: int
+    adoptions: List[AdoptionSchema]
