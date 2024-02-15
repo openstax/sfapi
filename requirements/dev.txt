@@ -1,0 +1,7 @@
+-r base.txt
+django-extensions
+pipdeptree
+pydot
+black # code formatting
+django-debug-toolbar
+django-cors-headers
