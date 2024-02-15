@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from api.views import api
+from api.api import api
 
 def trigger_error(request):
     division_by_zero = 1 / 0
