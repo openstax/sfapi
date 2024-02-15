@@ -117,11 +117,11 @@ DATABASES = {
     },
     'salesforce': {
         'ENGINE': 'salesforce.backend',
-        'CONSUMER_KEY': os.environ.get('SALESFORCE_CLIENT_ID'),
-        'CONSUMER_SECRET': os.environ.get('SALESFORCE_CLIENT_SECRET'),
-        'USER': os.environ.get('SALESFORCE_USERNAME'),
-        'PASSWORD': os.environ.get('SALESFORCE_PASSWORD') + os.environ.get('SALESFORCE_SECURITY_TOKEN'),
-        'HOST': os.environ.get('SALESFORCE_HOST', 'https://test.salesforce.com'),
+        'CONSUMER_KEY': os.getenv('SALESFORCE_CLIENT_ID'),
+        'CONSUMER_SECRET': os.getenv('SALESFORCE_CLIENT_SECRET'),
+        'USER': os.getenv('SALESFORCE_USERNAME'),
+        'PASSWORD': os.getenv('SALESFORCE_PASSWORD', 'replaceme') + os.getenv('SALESFORCE_SECURITY_TOKEN', 'replaceme'),
+        'HOST': os.getenv('SALESFORCE_HOST', 'https://test.salesforce.com'),
     }
 }
 
@@ -194,7 +194,7 @@ CRONTAB_LOCK_JOBS = os.getenv('CRONTAB_LOCK_JOBS') != 'False'
 
 # Logging
 LOGGING_CONFIG = None
-LOGLEVEL = os.environ.get('LOGLEVEL', 'error').upper()
+LOGLEVEL = os.getenv('LOGLEVEL', 'error').upper()
 logging.config.dictConfig({
     'version': 1,
     'disable_existing_loggers': False,
