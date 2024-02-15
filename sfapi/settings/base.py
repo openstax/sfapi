@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'oauth2_provider',
     'corsheaders',
     'ninja',
+    'aws',
     'sf',
     'api',
     'users',
