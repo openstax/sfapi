@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 from api.api import api
 
 def trigger_error(request):
@@ -8,7 +8,6 @@ def trigger_error(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     path('api/', api.urls),
     path('sentry-debug/', trigger_error),
 ]

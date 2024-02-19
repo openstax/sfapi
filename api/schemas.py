@@ -35,12 +35,12 @@ class AccountSchema(Schema):
     state: Optional[str] = Field(alias="billing_state")
     city: Optional[str] = Field(alias="billing_state")
     postal_code: Optional[str] = Field(alias="billing_postal_code")
-    website: Optional[str]
-    books_adopted: Optional[str]
-    ipeds_id: Optional[str]
-    nces_id: Optional[str]
+    # website: Optional[str]
+    # books_adopted: Optional[str]
+    # ipeds_id: Optional[str]
+    # nces_id: Optional[str]
     lms: Optional[str]
-    sheer_id_school_name: Optional[str]
+    # sheer_id_school_name: Optional[str]
 
 class AccountsSchema(Schema):
     count: int
