@@ -37,6 +37,7 @@ if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
     ALLOWED_HOSTS = ['*salesforce.openstax.org']
+USE_X_FORWARDED_HOST = True
 
 
 # Application definition
@@ -50,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'ninja',
+    'ninja_extra', # https://eadwincode.github.io/django-ninja-extra/tutorial/
     'aws',
     'sf',
     'api',

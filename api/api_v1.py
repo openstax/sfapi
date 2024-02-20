@@ -4,16 +4,26 @@ from accounts.functions import get_logged_in_user_uuid
 from .schemas import Message, AdoptionsSchema, ContactSchema
 
 from ninja import NinjaAPI
+from ninja_extra import NinjaExtraAPI, throttle
+from ninja_extra.throttling import UserRateThrottle
 
-api = NinjaAPI(
-    version="0.0.1",
+api = NinjaExtraAPI(
+    version="1.0.0",
     title="OpenStax Salesforce API",
     description="Useful for pulling common data from Salesforce, focused on Instructors.",
 )
 
 possible_error_codes = frozenset([400, 401, 404])
 
-@api.get("/contact", response={200: ContactSchema, possible_error_codes: Message}, tags=["user"])
+class User5MinRateThrottle(UserRateThrottle):
+    rate = "5/min"
+    scope = 'minutes'
+
+def is_authenticated(request):
+    return get_logged_in_user_uuid(request) is not None
+
+@api.get("/contact", auth=is_authenticated, response={200: ContactSchema, possible_error_codes: Message}, tags=["user"])
+@throttle(User5MinRateThrottle)
 def user(request):
     user_uuid = get_logged_in_user_uuid(request)
 
@@ -27,7 +37,8 @@ def user(request):
 
     return contact
 
-@api.get("/adoptions", response={200: AdoptionsSchema, possible_error_codes: Message}, tags=["user"])
+@api.get("/adoptions", auth=is_authenticated, response={200: AdoptionsSchema, possible_error_codes: Message}, tags=["user"])
+@throttle(User5MinRateThrottle)
 def adoptions(request, confirmed: bool = None, assumed: bool = None):
     user_uuid = get_logged_in_user_uuid(request)
     if not user_uuid:
