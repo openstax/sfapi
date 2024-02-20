@@ -8,20 +8,22 @@ from ninja_extra import NinjaExtraAPI, throttle
 from ninja_extra.throttling import UserRateThrottle
 
 api = NinjaExtraAPI(
-    version="1.0.0",
+    version="1.0.0",  # Do not exceed 1.x.x in this file, create api_v2.py for new versions; be careful of breaking changes
     title="OpenStax Salesforce API",
-    description="Useful for pulling common data from Salesforce, focused on Instructors.",
 )
 
 possible_error_codes = frozenset([400, 401, 404])
 
+# Throttling for Salesforce endpoints to prevent API calls going over the limit
 class User5MinRateThrottle(UserRateThrottle):
     rate = "5/min"
     scope = 'minutes'
 
+# Authentication decorator to check if the user is authenticated with OpenStax Accounts
 def is_authenticated(request):
     return get_logged_in_user_uuid(request) is not None
 
+# API endpoints, responses are defined in schemas.py
 @api.get("/contact", auth=is_authenticated, response={200: ContactSchema, possible_error_codes: Message}, tags=["user"])
 @throttle(User5MinRateThrottle)
 def user(request):
