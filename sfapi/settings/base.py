@@ -13,9 +13,9 @@ from django.utils.log import DEFAULT_LOGGING
 
 load_dotenv()
 
-ENVIRONMENT = os.environ.get('ENVIRONMENT', 'local')
-RELEASE_VERSION = os.environ.get('RELEASE_VERSION')
-DEPLOYMENT_VERSION = os.environ.get('DEPLOYMENT_VERSION')
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'local')
+RELEASE_VERSION = os.getenv('RELEASE_VERSION')
+DEPLOYMENT_VERSION = os.getenv('DEPLOYMENT_VERSION')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -45,8 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'ninja',
-    'ninja_extra', # https://eadwincode.github.io/django-ninja-extra/tutorial/
-    'aws',
+    'ninja_extra',
     'sf',
     'api',
     'users',
@@ -61,19 +60,20 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'healthcheck.middleware.HealthCheckMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
-SECURE_SSL_REDIRECT = not DEBUG
-
-SECURE_HSTS_PRELOAD = True
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_SECONDS = 31536000  # 1 year
+# CSRF_COOKIE_SECURE = True
+# SESSION_COOKIE_SECURE = True
+# SECURE_SSL_REDIRECT = not DEBUG
+#
+# SECURE_HSTS_PRELOAD = True
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_SECONDS = 31536000  # 1 year
 
 if DEBUG:
     CORS_ORIGIN_ALLOW_ALL = True
@@ -256,3 +256,10 @@ if BASE_URL is None:
         else:
             APPLICATION_DOMAIN = f'{ENVIRONMENT}.openstax.org'
     BASE_URL = f'https://{APPLICATION_DOMAIN}'
+
+
+# to override any of the above settings use a local.py file in this directory
+try:
+    from .local import *
+except ImportError:
+    pass

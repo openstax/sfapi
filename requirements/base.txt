@@ -12,6 +12,7 @@ django-ninja==1.1.0
 django-ninja-extra==0.20.4
 django-salesforce-agpl==5.0
 django-oauth-toolkit==2.3.0
+gunicorn==21.2.0
 idna==3.6
 injector==0.21.0
 isodate==0.6.1
