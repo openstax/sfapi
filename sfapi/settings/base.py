@@ -37,7 +37,6 @@ if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
     ALLOWED_HOSTS = ['*salesforce.openstax.org']
-USE_X_FORWARDED_HOST = True
 
 
 # Application definition
