@@ -20,8 +20,6 @@ DEPLOYMENT_VERSION = os.environ.get('DEPLOYMENT_VERSION')
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-ALLOWED_HOSTS = json.loads(os.getenv('ALLOWED_HOSTS', '[]'))
-
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
@@ -31,15 +29,12 @@ if len(sys.argv) > 1:
 else:
     DEBUG = False
 
-ADMINS = ('Michael Volo', 'volo@rice.edu')
-
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = ['*salesforce.openstax.org']
+    ALLOWED_HOSTS = json.loads(os.getenv('ALLOWED_HOSTS', '[]'))
 
-
-# Application definition
+ADMINS = ('Michael Volo', 'volo@rice.edu')
 
 INSTALLED_APPS = [
     'django.contrib.admin',

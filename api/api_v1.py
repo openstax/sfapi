@@ -1,18 +1,19 @@
+from sentry_sdk import capture_message
+
 from sf.models.adoption import Adoption
 from sf.models.contact import Contact
 from accounts.functions import get_logged_in_user_uuid
 from .schemas import Message, AdoptionsSchema, ContactSchema
 
-from ninja import NinjaAPI
 from ninja_extra import NinjaExtraAPI, throttle
 from ninja_extra.throttling import UserRateThrottle
 
 api = NinjaExtraAPI(
-    version="1.0.0",  # Do not exceed 1.x.x in this file, create api_v2.py for new versions; be careful of breaking changes
+    version="1.0.0",  # Do not exceed 1.x.x in this file, create api_v2.py for new versions; NO breaking changes!
     title="OpenStax Salesforce API",
 )
 
-possible_error_codes = frozenset([400, 401, 404])
+possible_error_codes = frozenset([401, 404])
 
 # Throttling for Salesforce endpoints to prevent API calls going over the limit
 class User5MinRateThrottle(UserRateThrottle):
@@ -29,12 +30,10 @@ def is_authenticated(request):
 def user(request):
     user_uuid = get_logged_in_user_uuid(request)
 
-    if not user_uuid:
-        return 401, {"message": "User is not authenticated."}
-
     try:
         contact = Contact.objects.get(accounts_uuid=user_uuid)
     except Contact.DoesNotExist:
+        capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
         return 404, {"message": "User does not have a valid Salesforce Contact."}
 
     return contact
@@ -43,11 +42,10 @@ def user(request):
 @throttle(User5MinRateThrottle)
 def adoptions(request, confirmed: bool = None, assumed: bool = None):
     user_uuid = get_logged_in_user_uuid(request)
-    if not user_uuid:
-        return 401, {"message": "User is not authenticated."}
 
     contact = Contact.objects.get(accounts_uuid=user_uuid)
     if not contact:
+        capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
         return 404, {"message": "User does not have a valid Salesforce Contact."}
 
     contact_adoptions = Adoption.objects.filter(contact=contact)
