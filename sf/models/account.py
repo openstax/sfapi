@@ -15,7 +15,6 @@ class Account(models.SalesforceModel):
     billing_latitude = models.DecimalField(db_column='BillingLatitude', max_digits=18, decimal_places=15, blank=True, null=True)
     billing_longitude = models.DecimalField(db_column='BillingLongitude', max_digits=18, decimal_places=15, blank=True, null=True)
     billing_address = models.TextField(db_column='BillingAddress', sf_read_only=models.READ_ONLY, blank=True, null=True)  # This field type is a guess.
-    shipping_address = models.TextField(db_column='ShippingAddress', sf_read_only=models.READ_ONLY, blank=True, null=True)  # This field type is a guess.
     phone = models.CharField(db_column='Phone', max_length=40, verbose_name='Account Phone', blank=True, null=True)
     account_number = models.CharField(db_column='AccountNumber', max_length=40, blank=True, null=True)
     website = models.URLField(db_column='Website', blank=True, null=True)
