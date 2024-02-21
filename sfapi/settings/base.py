@@ -61,7 +61,6 @@ AUTH_USER_MODEL = 'users.User'
 LOGIN_URL = '/admin/login/'
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'healthcheck.middleware.HealthCheckMiddleware',
@@ -81,6 +80,7 @@ MIDDLEWARE = [
 
 if DEBUG:
     CORS_ORIGIN_ALLOW_ALL = True
+    MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
 
 ROOT_URLCONF = 'sfapi.urls'
 
