@@ -36,7 +36,7 @@ else:
         ALLOWED_HOSTS = ['salesforce.openstax.org']
     else:
         # All non-local and non-prod environments
-        ALLOWED_HOSTS = [f"{ENVIRONMENT}.salesforce.openstax.org", f"{ENVIRONMENT}.sandbox.salesforce.openstax.org"]
+        ALLOWED_HOSTS = [f"{ENVIRONMENT}.salesforce.openstax.org", f"{ENVIRONMENT}.salesforce.sandbox.openstax.org"]
 
 ADMINS = ('Michael Volo', 'volo@rice.edu')
 
