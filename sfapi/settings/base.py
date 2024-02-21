@@ -32,7 +32,7 @@ else:
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = ["*.salesforce.sandbox.openstax.org", "*.salesforce.openstax.org"]
+    ALLOWED_HOSTS = ["dev.salesforce.sandbox.openstax.org", "*.salesforce.openstax.org"]
 
 ADMINS = ('Michael Volo', 'volo@rice.edu')
 
