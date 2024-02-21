@@ -1,2 +1,2 @@
 -r base.txt
-uwsgi>=2.0.20
+gunicorn==21.2.0

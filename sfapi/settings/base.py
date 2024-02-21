@@ -38,7 +38,7 @@ else:
         # All non-local and non-prod environments
         ALLOWED_HOSTS = [f"{ENVIRONMENT}.salesforce.openstax.org", f"{ENVIRONMENT}.salesforce.sandbox.openstax.org"]
 
-ADMINS = ('Michael Volo', 'volo@rice.edu')
+ADMINS = ('SF Admin', 'sfadmin@openstax.org')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'ninja',
     'ninja_extra',
     'sf',
     'api',
@@ -103,8 +104,6 @@ WSGI_APPLICATION = 'sfapi.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -130,8 +129,6 @@ DATABASE_ROUTERS = [
 
 
 # Password validation
-# https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -149,24 +146,15 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
 STATIC_ROOT = os.path.join(BASE_DIR, 'public', 'static')
 STATIC_URL = 'static/'
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -175,7 +163,7 @@ SSO_COOKIE_NAME = os.getenv('SSO_COOKIE_NAME', 'oxa')
 SIGNATURE_PUBLIC_KEY = os.getenv('SSO_SIGNATURE_PUBLIC_KEY')
 ENCRYPTION_PRIVATE_KEY = os.getenv('SSO_ENCRYPTION_PRIVATE_KEY')
 
-# Sentry
+# Sentry settings
 sentry_sdk.init(
     dsn=os.getenv('SENTRY_DSN'),
     integrations=[DjangoIntegration()],
@@ -250,18 +238,8 @@ logging.config.dictConfig({
     },
 })
 
-BASE_URL = os.getenv('BASE_URL')
-if BASE_URL is None:
-    APPLICATION_DOMAIN = os.getenv('APPLICATION_DOMAIN')
-    if APPLICATION_DOMAIN is None:
-        if ENVIRONMENT == 'prod':
-            APPLICATION_DOMAIN = 'openstax.org'
-        else:
-            APPLICATION_DOMAIN = f'{ENVIRONMENT}.openstax.org'
-    BASE_URL = f'https://{APPLICATION_DOMAIN}'
-
-
-# to override any of the above settings use a local.py file in this directory
+# this is used by the deployment to override settings
+# you can use it locally, but don't check it in
 try:
     from .local import *
 except ImportError:
