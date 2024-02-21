@@ -1,5 +1,4 @@
 import os
-import json
 import sys
 
 import sentry_sdk
@@ -32,7 +31,12 @@ else:
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = ["dev.salesforce.sandbox.openstax.org", "*.salesforce.openstax.org"]
+    if ENVIRONMENT == 'prod':
+        # Prod only
+        ALLOWED_HOSTS = ['salesforce.openstax.org']
+    else:
+        # All non-local and non-prod environments
+        ALLOWED_HOSTS = [f"{ENVIRONMENT}.salesforce.openstax.org", f"{ENVIRONMENT}.sandbox.salesforce.openstax.org"]
 
 ADMINS = ('Michael Volo', 'volo@rice.edu')
 
@@ -44,7 +48,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
-    'ninja',
     'ninja_extra',
     'sf',
     'api',

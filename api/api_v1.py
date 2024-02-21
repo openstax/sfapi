@@ -3,7 +3,7 @@ from sentry_sdk import capture_message
 from sf.models.adoption import Adoption
 from sf.models.contact import Contact
 from accounts.functions import get_logged_in_user_uuid
-from .schemas import Message, AdoptionsSchema, ContactSchema
+from .schemas import ErrorSchema, AdoptionsSchema, ContactSchema
 
 from ninja_extra import NinjaExtraAPI, throttle
 from ninja_extra.throttling import UserRateThrottle
@@ -21,32 +21,31 @@ class SalesforceAPIRateThrottle(UserRateThrottle):
     scope = 'minutes'
 
 # Authentication decorator to check if the user is authenticated with OpenStax Accounts
-def is_authenticated(request):
+def has_auth(request):
     return get_logged_in_user_uuid(request) is not None
 
-# API endpoints, responses are defined in schemas.py
-@api.get("/contact", auth=is_authenticated, response={200: ContactSchema, possible_error_codes: Message}, tags=["user"])
-@throttle(SalesforceAPIRateThrottle)
-def user(request):
+def get_user_contact(request):
     user_uuid = get_logged_in_user_uuid(request)
 
     try:
         contact = Contact.objects.get(accounts_uuid=user_uuid)
     except Contact.DoesNotExist:
+        # Want to see why this would be called for a user without a contact, might get noisy (but also wasteful is not caught)
         capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
-        return 404, {"message": "User does not have a valid Salesforce Contact."}
+        return 404, {"detail": "User does not have a valid Salesforce Contact."}
 
     return contact
 
-@api.get("/adoptions", auth=is_authenticated, response={200: AdoptionsSchema, possible_error_codes: Message}, tags=["user"])
+# API endpoints, responses are defined in schemas.py
+@api.get("/contact", auth=has_auth, response={200: ContactSchema, possible_error_codes: ErrorSchema}, tags=["user"])
+@throttle(SalesforceAPIRateThrottle)
+def user(request):
+    return get_user_contact(request)
+
+@api.get("/adoptions", auth=has_auth, response={200: AdoptionsSchema, possible_error_codes: ErrorSchema}, tags=["user"])
 @throttle(SalesforceAPIRateThrottle)
 def adoptions(request, confirmed: bool = None, assumed: bool = None):
-    user_uuid = get_logged_in_user_uuid(request)
-
-    contact = Contact.objects.get(accounts_uuid=user_uuid)
-    if not contact:
-        capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
-        return 404, {"message": "User does not have a valid Salesforce Contact."}
+    contact = get_user_contact(request)
 
     contact_adoptions = Adoption.objects.filter(contact=contact)
     if confirmed:
@@ -55,6 +54,6 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None):
         contact_adoptions = contact_adoptions.exclude(confirmation_type="OpenStax Confirmed Adoption")
 
     if not contact_adoptions:
-        return 404, {"message": "No adoptions found."}
+        return 404, {"detail": "No adoptions found."}
 
     return {"count": len(contact_adoptions), "adoptions": contact_adoptions}

@@ -9,8 +9,8 @@ from ninja import Field, Schema
 
 # General schema for errors returned by the API, change this if more details are needed with an error response
 # See api_vX.py @api decorator response for usage
-class Message(Schema):
-    message: str
+class ErrorSchema(Schema):
+    detail: str
 
 ########
 # Books#
@@ -21,6 +21,8 @@ class BookSchema(Schema):
     official_name: str
     type: Optional[str] = Field(description="The type of the book.")
     subject_areas: Optional[str]
+    active_book: Optional[bool]
+    website_url: Optional[str]
 
 class BooksSchema(Schema):
     count: int
@@ -54,7 +56,7 @@ class ContactSchema(Schema):
     first_name: str
     last_name: str
     full_name: str
-    # school: AccountSchema = Field(alias="account") # might be a performance hit
+    # school: AccountSchema = Field(alias="account") # might be a performance hit, but add if the details are needed
     school: str = Field(alias="account.name")
     role: Optional[str]
     position: Optional[str]
@@ -76,7 +78,7 @@ class ContactsSchema(Schema):
 #############
 class AdoptionSchema(Schema):
     id: str
-    # contact: ContactSchema # might be a performance hit
+    # contact: ContactSchema # might be a performance hit, but add if the details are needed
     book: BookSchema = Field(alias="opportunity.book")
     base_year: Optional[int]
     school_year: Optional[str]
