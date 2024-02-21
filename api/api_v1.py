@@ -16,7 +16,7 @@ api = NinjaExtraAPI(
 possible_error_codes = frozenset([401, 404])
 
 # Throttling for Salesforce endpoints to prevent API calls going over the limit
-class User5MinRateThrottle(UserRateThrottle):
+class SalesforceAPIRateThrottle(UserRateThrottle):
     rate = "5/min"
     scope = 'minutes'
 
@@ -26,7 +26,7 @@ def is_authenticated(request):
 
 # API endpoints, responses are defined in schemas.py
 @api.get("/contact", auth=is_authenticated, response={200: ContactSchema, possible_error_codes: Message}, tags=["user"])
-@throttle(User5MinRateThrottle)
+@throttle(SalesforceAPIRateThrottle)
 def user(request):
     user_uuid = get_logged_in_user_uuid(request)
 
@@ -39,7 +39,7 @@ def user(request):
     return contact
 
 @api.get("/adoptions", auth=is_authenticated, response={200: AdoptionsSchema, possible_error_codes: Message}, tags=["user"])
-@throttle(User5MinRateThrottle)
+@throttle(SalesforceAPIRateThrottle)
 def adoptions(request, confirmed: bool = None, assumed: bool = None):
     user_uuid = get_logged_in_user_uuid(request)
 

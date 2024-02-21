@@ -5,8 +5,10 @@ from ninja import Field, Schema
 # The schema for the response of endpoints are here
 # The fields set here will be for validation (if creating), serialization, and /api/docs
 # Schema returning multiple objects contain a parent Schema with the fields, and a child Schema with a count and objects
+# Commented out fields might be useful, but can cause performance issues and are marked as suck
 
-# General schema for errors returned by the API
+# General schema for errors returned by the API, change this if more details are needed with an error response
+# See api_vX.py @api decorator response for usage
 class Message(Schema):
     message: str
 
@@ -34,13 +36,8 @@ class AccountSchema(Schema):
     country: Optional[str] = Field(alias="billing_country")
     state: Optional[str] = Field(alias="billing_state")
     city: Optional[str] = Field(alias="billing_state")
-    postal_code: Optional[str] = Field(alias="billing_postal_code")
-    # website: Optional[str]
-    # books_adopted: Optional[str]
-    # ipeds_id: Optional[str]
-    # nces_id: Optional[str]
     lms: Optional[str]
-    # sheer_id_school_name: Optional[str]
+    sheer_id_school_name: Optional[str]
 
 class AccountsSchema(Schema):
     count: int
@@ -57,7 +54,8 @@ class ContactSchema(Schema):
     first_name: str
     last_name: str
     full_name: str
-    school: AccountSchema = Field(alias="account")
+    # school: AccountSchema = Field(alias="account") # might be a performance hit
+    school: str = Field(alias="account.name")
     role: Optional[str]
     position: Optional[str]
     adoption_status: Optional[str]
@@ -78,7 +76,7 @@ class ContactsSchema(Schema):
 #############
 class AdoptionSchema(Schema):
     id: str
-    # contact: ContactSchema
+    # contact: ContactSchema # might be a performance hit
     book: BookSchema = Field(alias="opportunity.book")
     base_year: Optional[int]
     school_year: Optional[str]
