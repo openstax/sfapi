@@ -1,3 +1,2 @@
 -r base.txt
 pipdeptree
-django-cors-headers

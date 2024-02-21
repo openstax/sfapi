@@ -1,4 +1,5 @@
 Django==5.0.2
+django-cors-headers
 django-ninja==1.1.0
 django-ninja-extra==0.20.4
 django-salesforce-agpl==5.0
