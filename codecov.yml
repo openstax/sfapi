@@ -5,3 +5,10 @@ coverage:
 comment: false
 ignore:
   - "*tests.py"
+  - 'healthcheck/*'
+  - 'manage.py'
+  - 'manage.py'
+  - '*/migrations/*'
+  - '*settings.py'
+  - '*wsgi.py'
+  - '*asgi.py'

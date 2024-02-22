@@ -16,3 +16,4 @@ DATABASES['default'] = {
     }
 
 SALESFORCE_DB_ALIAS = 'default'
+IS_TESTING = True

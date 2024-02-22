@@ -1,12 +1,17 @@
 import uuid
 from django.utils import timezone
-from django.test import TestCase, Client
+from django.test import TestCase, override_settings
+from ninja.testing import TestClient
 from sf.models.contact import Contact
+from .api_v1 import router
 
+# Disable logging to prevent unnecessary output during tests
+import logging
+logging.disable(logging.CRITICAL)
 
 class APITest(TestCase):
     def setUp(self):
-        self.client = Client()
+        self.client = TestClient(router)
         self.contact = Contact.objects.create(
             email="test@openstax.org",
             first_name="Test",
@@ -15,11 +20,32 @@ class APITest(TestCase):
             signup_date=timezone.now()
         )
 
-    def test_contact_get(self):
-        response = self.client.get('/api/v1/contact/')
+    @override_settings(IS_TESTING=False)
+    def test_not_logged_in_contact_returns_401(self):
+        response = self.client.get('/contact')
+        self.assertEqual(response.status_code, 401)
+
+    @override_settings(IS_TESTING=False)
+    def test_not_logged_in_adoption_returns_401(self):
+        response = self.client.get('/adoptions')
+        self.assertEqual(response.status_code, 401)
+
+    def test_no_contact_found(self):
+        response = self.client.get('/contact')
         self.assertEqual(response.status_code, 404)
 
-    def test_adoption_get(self):
-        response = self.client.get('/api/v1/adoption/')
-        self.assertEqual(response.status_code, 404)
+    def test_rate_limiting(self):
+        for _ in range(4):
+            response = self.client.get('/contact')
+            self.assertEqual(response.status_code, 404)
+
+        response = self.client.get('/contact')
+        self.assertEqual(response.status_code, 429)
+
+
+
+
+    # TODO: Find elegant way to test authenticated endpoints and return the contact from the test database
+
+
 
