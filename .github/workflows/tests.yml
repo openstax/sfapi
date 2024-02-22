@@ -37,7 +37,7 @@ jobs:
         - run: pip install -r requirements/test.txt
 
         - name: Run tests and generate coverage reports
-          run: coverage -t ${{ secrets.CODECOV_TOKEN }} run manage.py test --settings sfapi.settings.test
+          run: coverage run --source'.' manage.py test --settings=sfapi.settings.test
           env:
             SECRET_KEY: ${{ secrets.SECRET_KEY }}
             SSO_SIGNATURE_PUBLIC_KEY: ${{ secrets.SSO_SIGNATURE_PUBLIC_KEY }}
@@ -46,5 +46,8 @@ jobs:
         - name: Upload coverage reports to Codecov
           uses: codecov/codecov-action@v4.0.1
           with:
+            directory: .coverage
             token: ${{ secrets.CODECOV_TOKEN }}
             slug: openstax/sfapi
+          env:
+            CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
