@@ -6,4 +6,13 @@ from .base import *
 # We also want to avoid using the Salesforce database because we don't want to accidentally create or modify any Salesforce
 # records while running our tests.
 
+DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'sfapi',
+        'USER': 'sfapi',
+        'PASSWORD': 'sfapi',
+        'HOST': 'localhost',
+        'PORT': 5432,
+    }
+
 SALESFORCE_DB_ALIAS = 'default'
