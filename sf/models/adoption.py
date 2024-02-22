@@ -6,7 +6,7 @@ from .opportunity import Opportunity
 # The adoption is nested under the opportunity, which is nested under the contact
 
 class Adoption(models.SalesforceModel):
-    contact = models.ForeignKey(Contact, models.DO_NOTHING, db_column='Opportunity__r.Contact__c')
+    contact = models.ForeignKey(Contact, on_delete=models.DO_NOTHING, sf_read_only=models.READ_ONLY, db_column='Opportunity__r.Contact__c')
     adoption_number = models.CharField(db_column='Name', max_length=80, sf_read_only=models.READ_ONLY)
     created_date = models.DateTimeField(db_column='CreatedDate', sf_read_only=models.READ_ONLY)
     last_modified_date = models.DateTimeField(db_column='LastModifiedDate', sf_read_only=models.READ_ONLY)
@@ -14,7 +14,7 @@ class Adoption(models.SalesforceModel):
     last_activity_date = models.DateField(db_column='LastActivityDate', sf_read_only=models.READ_ONLY, blank=True,
                                           null=True)
     class_start_date = models.DateField(db_column='Class_Start_Date__c', blank=True, null=True)
-    opportunity = models.ForeignKey(Opportunity, models.DO_NOTHING, db_column='Opportunity__c', max_length=18)
+    opportunity = models.ForeignKey(Opportunity, on_delete=models.DO_NOTHING, sf_read_only=models.READ_ONLY, db_column='Opportunity__c', max_length=18)
     confirmation_date = models.DateField(db_column='Confirmation_Date__c', blank=True, null=True)
     name = models.CharField(db_column='Name__c', max_length=255, blank=True, null=True)
     base_year = models.DecimalField(db_column='Base_Year__c', max_digits=4, decimal_places=0, blank=True, null=True)
@@ -54,4 +54,3 @@ class Adoption(models.SalesforceModel):
         db_table = 'Adoption__c'
         verbose_name = 'Adoption'
         verbose_name_plural = 'Adoptions'
-        # keyPrefix = 'a00'

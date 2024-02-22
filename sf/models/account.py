@@ -31,8 +31,8 @@ class Account(models.SalesforceModel):
     billing_state_code = models.CharField(db_column='BillingStateCode', max_length=10,  blank=True, null=True)
     billing_country_code = models.CharField(db_column='BillingCountryCode', max_length=10,
                                             default='US', blank=True, null=True)
-    created_date = models.DateTimeField(db_column='CreatedDate', sf_read_only=models.READ_ONLY)
-    last_modified_date = models.DateTimeField(db_column='LastModifiedDate', sf_read_only=models.READ_ONLY)
+    created_date = models.DateTimeField(db_column='CreatedDate', sf_read_only=models.READ_ONLY, null=True)
+    last_modified_date = models.DateTimeField(db_column='LastModifiedDate', sf_read_only=models.READ_ONLY, null=True)
     last_activity_date = models.DateField(db_column='LastActivityDate', verbose_name='Last Activity',
                                           sf_read_only=models.READ_ONLY, blank=True, null=True)
     lms = models.CharField(db_column='LMS__c', max_length=255, verbose_name='LMS',
@@ -58,6 +58,5 @@ class Account(models.SalesforceModel):
 
     class Meta(models.Model.Meta):
         db_table = 'Account'
-        verbose_name = 'Account'
-        verbose_name_plural = 'Accounts'
-        # keyPrefix = '001'
+        verbose_name = 'School'
+        verbose_name_plural = 'Schools'

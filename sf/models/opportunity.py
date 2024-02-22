@@ -4,7 +4,7 @@ from .account import Account
 from .contact import Contact
 
 class Opportunity(models.SalesforceModel):
-    account = models.ForeignKey(Account, models.DO_NOTHING, db_column='AccountId', max_length=18, verbose_name='Account ID', blank=True, null=True)  # References to missing tables: ['-Account']
+    account = models.ForeignKey(Account, on_delete=models.DO_NOTHING, sf_read_only=models.READ_ONLY, db_column='AccountId', max_length=18, verbose_name='Account ID', blank=True, null=True)  # References to missing tables: ['-Account']
     record_type_id = models.CharField(db_column='RecordTypeId', max_length=18, verbose_name='Record Type ID', blank=True, null=True)  # References to missing tables: ['-RecordType']
     name = models.CharField(db_column='Name', max_length=120)
     description = models.TextField(db_column='Description', blank=True, null=True)
@@ -31,7 +31,7 @@ class Opportunity(models.SalesforceModel):
     contact = models.ForeignKey(Contact, models.DO_NOTHING, db_column='ContactId', max_length=18, verbose_name='Contact ID', sf_read_only=models.NOT_UPDATEABLE, blank=True, null=True)  # References to missing tables: ['-Contact']
     last_viewed_date = models.DateTimeField(db_column='LastViewedDate', sf_read_only=models.READ_ONLY, blank=True, null=True)
     last_referenced_date = models.DateTimeField(db_column='LastReferencedDate', sf_read_only=models.READ_ONLY, blank=True, null=True)
-    book = models.ForeignKey(Book, models.DO_NOTHING, db_column='Book__c', max_length=18, blank=True, null=True)  # References to missing tables: ['-Book__c']
+    book = models.ForeignKey(Book, on_delete=models.DO_NOTHING, sf_read_only=models.READ_ONLY, db_column='Book__c', max_length=18, blank=True, null=True)  # References to missing tables: ['-Book__c']
 
     class Meta(models.Model.Meta):
         db_table = 'Opportunity'

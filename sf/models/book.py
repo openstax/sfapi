@@ -11,3 +11,5 @@ class Book(models.SalesforceModel):
 
     class Meta:
         db_table = 'Book__c'
+        verbose_name = 'Book'
+        verbose_name_plural = 'Books'
