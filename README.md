@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/openstax/sfapi/graph/badge.svg?token=lEbEFIOfIR)](https://codecov.io/gh/openstax/sfapi)
+
 # OpenStax Salesforce API
 ## Getting Started
 To get started, you will need to have a Salesforce account and a connected app.\
