@@ -20,7 +20,7 @@ DEPLOYMENT_VERSION = os.getenv('DEPLOYMENT_VERSION')
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-#&')
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # check if running local dev server - else default to DEBUG=False
 if len(sys.argv) > 1:

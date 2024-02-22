@@ -39,6 +39,10 @@ jobs:
 
         - name: Run tests
           run: python manage.py test --settings sfapi.settings.test
+          env:
+            SECRET_KEY: ${{ secrets.SECRET_KEY }}
+            SSO_SIGNATURE_PUBLIC_KEY: ${{ secrets.SSO_SIGNATURE_PUBLIC_KEY }}
+            SSO_ENCRYPTION_PRIVATE_KEY: ${{ secrets.SSO_ENCRYPTION_PRIVATE_KEY }}
 
         - name: Upload coverage reports to Codecov
           uses: codecov/codecov-action@v4.0.1
