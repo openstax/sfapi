@@ -37,7 +37,7 @@ jobs:
         - run: pip install -r requirements/test.txt
 
         - name: Run tests and generate coverage reports
-          run: coverage run manage.py test --settings sfapi.settings.test -t ${{ secrets.CODECOV_TOKEN }}
+          run: coverage -t ${{ secrets.CODECOV_TOKEN }} run manage.py test --settings sfapi.settings.test
           env:
             SECRET_KEY: ${{ secrets.SECRET_KEY }}
             SSO_SIGNATURE_PUBLIC_KEY: ${{ secrets.SSO_SIGNATURE_PUBLIC_KEY }}
