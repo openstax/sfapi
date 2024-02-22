@@ -13,9 +13,20 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 30
 
+        services:
+          postgres:
+            image: postgres:14
+            env:
+              POSTGRES_USER: sfapi
+              POSTGRES_PASSWORD: sfapi
+              POSTGRES_DB: sfapi
+            ports:
+              - 5432:5432
+            options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
         steps:
         - name: Checkout code
-          uses: actions/checkout@v2
+          uses: actions/checkout@v3
 
         - name: Set up Python
           uses: actions/setup-python@v2
@@ -23,8 +34,8 @@ jobs:
 
         - name: Install dependencies
           run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements/test.txt
+            python -m pip install --upgrade pip
+            pip install -r requirements/test.txt
 
         - name: Run tests
           run: python manage.py test --settings sfapi.settings.test
