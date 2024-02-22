@@ -1,0 +1,7 @@
+coverage:
+  status:
+    patch: true
+    project: false
+comment: false
+ignore:
+  - "*tests.py"

@@ -29,7 +29,19 @@ jobs:
           uses: actions/checkout@v3
 
         - name: Set up Python
-          uses: actions/setup-python@v2
+          uses: actions/setup-python@v4
+
+        - name: Get pip cache directory
+          id: pip-cache
+          run: echo "::set-output name=dir::$(pip cache dir)"
+
+        - name: Cache pip
+          - uses: actions/cache@v3
+            with:
+              path: ${{ steps.pip-cache.outputs.dir }}
+              key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements/test.txt') }}
+              restore-keys: |
+                ${{ runner.os }}-pip-
 
 
         - name: Install dependencies
@@ -37,8 +49,8 @@ jobs:
             python -m pip install --upgrade pip
             pip install -r requirements/test.txt
 
-        - name: Run tests
-          run: python manage.py test --settings sfapi.settings.test
+        - name: Run tests and generate coverage reports
+          run: coverage python manage.py test --settings sfapi.settings.test
           env:
             SECRET_KEY: ${{ secrets.SECRET_KEY }}
             SSO_SIGNATURE_PUBLIC_KEY: ${{ secrets.SSO_SIGNATURE_PUBLIC_KEY }}
