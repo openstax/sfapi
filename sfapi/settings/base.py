@@ -52,7 +52,6 @@ INSTALLED_APPS = [
     'sf',
     'api',
     'users',
-    'accounts',
     'salesforce',
 ]
 

@@ -9,8 +9,6 @@ class ContactTest(TestCase):
     databases = {'default', 'salesforce'}
 
     def test_contact_create(self):
-        # Then override the LOGIN_URL setting
-        #with self.settings(SALESFORCE_DB_ALIAS="salesforce"):
         faux_account_id = uuid.uuid4()
         contact = Contact.objects.create(
             email="test@openstax.org",

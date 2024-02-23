@@ -2,7 +2,7 @@ from sentry_sdk import capture_message
 from django.conf import settings
 from sf.models.adoption import Adoption
 from sf.models.contact import Contact
-from accounts.functions import get_logged_in_user_uuid
+from openstax_accounts.functions import get_logged_in_user_uuid
 from .schemas import ErrorSchema, AdoptionsSchema, ContactSchema
 
 from ninja_extra import NinjaExtraAPI, throttle, Router
