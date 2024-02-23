@@ -3,8 +3,7 @@ django-cors-headers
 django-ninja==1.1.0
 django-ninja-extra==0.20.4
 django-salesforce-agpl==5.0
-# openstax-accounts==1.0.0
-git+https://github.com/openstax/django-openstax-accounts
+openstax-accounts
 psycopg2==2.9.9
 PyJWE==1.0.0
 PyJWT==2.8.0
