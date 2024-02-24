@@ -15,6 +15,7 @@ load_dotenv()
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'local')
 RELEASE_VERSION = os.getenv('RELEASE_VERSION')
 DEPLOYMENT_VERSION = os.getenv('DEPLOYMENT_VERSION')
+IS_TESTING = os.getenv('IS_TESTING', 'False')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
