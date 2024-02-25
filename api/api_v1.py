@@ -14,7 +14,7 @@ api = NinjaExtraAPI(
 )
 router = Router()
 
-possible_error_codes = frozenset([401, 404])
+possible_error_codes = frozenset([401, 404, 422])
 
 # Throttling for Salesforce endpoints to prevent API calls going over the limit
 class SalesforceAPIRateThrottle(UserRateThrottle):
@@ -36,6 +36,9 @@ def get_user_contact(request):
         # Want to see why this would be called for a user without a contact, might get noisy (but also wasteful is not caught)
         capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
         return 404, {"detail": "User does not have a valid Salesforce Contact."}
+    except Contact.MultipleObjectsReturned:
+        capture_message(f"User {user_uuid} has multiple Salesforce Contacts.")
+        return 422, {"detail": "User has multiple Salesforce Contacts. This has been reported to the Data team for resolution."}
 
     return contact
 
