@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import logging.config
 from django.utils.log import DEFAULT_LOGGING
 
+# Load environment variables from .env file
 load_dotenv()
 
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'local')
@@ -18,8 +19,7 @@ DEPLOYMENT_VERSION = os.getenv('DEPLOYMENT_VERSION')
 IS_TESTING = os.getenv('IS_TESTING', 'False')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
+BASE_DIR = os.path.join(os.path.dirname(__file__), '..', '..')
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'ninja',
     'ninja_extra',
     'sf',
     'api',

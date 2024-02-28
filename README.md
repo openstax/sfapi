@@ -2,6 +2,8 @@
 [![codecov](https://codecov.io/gh/openstax/sfapi/graph/badge.svg?token=lEbEFIOfIR)](https://codecov.io/gh/openstax/sfapi)
 ![tests workflow](https://github.com/openstax/sfapi/actions/workflows/tests.yml/badge.svg)
 ![AWS CodeBuild](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiTUhjbUx0VUtYR0ZZb3RRUEQ2QzJENHZNUXhveWVwb3FvRDl4K2VQTGZHblpQSm1oakwwQU1laW13YWwrWUh6Y2RGdG8vNTBqSG5Ia2NSTExHOHprZXo0PSIsIml2UGFyYW1ldGVyU3BlYyI6ImZ0UTZWSVZZNWw2QmUydVEiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=main)
+![](https://img.shields.io/github/v/tag/openstax/sfapi?label=latest%20tag)
+
 # OpenStax Salesforce API
 ## Getting Started
 To get started, you will need to have a Salesforce account and a connected app.\
