@@ -127,6 +127,14 @@ DATABASE_ROUTERS = [
     "salesforce.router.ModelRouter"
 ]
 
+PARDOT = {
+    'business_unit_id': os.getenv('PARDOT_BUSINESS_UNIT_ID'),
+    'sf_consumer_key': os.getenv('SF_CONSUMER_KEY'),  # TODO: this should use the same key as the salesforce backend on production
+    'sf_consumer_secret': os.getenv('SF_CONSUMER_SECRET'),
+    'sf_refresh_token': os.getenv('SALESFORCE_REFRESH_TOKEN'),
+    'version': os.getenv('PARDOT_API_VERSION', '4')
+}
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
