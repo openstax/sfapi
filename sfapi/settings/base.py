@@ -115,10 +115,10 @@ DATABASES = {
     },
     'salesforce': {
         'ENGINE': 'salesforce.backend',
-        'CONSUMER_KEY': os.getenv('SALESFORCE_CLIENT_ID', ''),
-        'CONSUMER_SECRET': os.getenv('SALESFORCE_CLIENT_SECRET', ''),
-        'USER': os.getenv('SALESFORCE_USERNAME', ''),
-        'PASSWORD': os.getenv('SALESFORCE_PASSWORD', '') + os.getenv('SALESFORCE_SECURITY_TOKEN', ''),
+        'CONSUMER_KEY': os.getenv('SALESFORCE_CLIENT_ID', 'replaceme'),
+        'CONSUMER_SECRET': os.getenv('SALESFORCE_CLIENT_SECRET', 'replaceme'),
+        'USER': os.getenv('SALESFORCE_USERNAME', 'replaceme'),
+        'PASSWORD': os.getenv('SALESFORCE_PASSWORD', 'replaceme') + os.getenv('SALESFORCE_SECURITY_TOKEN', 'replaceme'),
         'HOST': os.getenv('SALESFORCE_HOST', 'https://test.salesforce.com'),
     }
 }
