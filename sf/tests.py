@@ -6,7 +6,7 @@ from sf.models.account import Account
 
 
 class ContactTest(TestCase):
-    databases = {'default', 'salesforce'}
+    databases = {'default'}
 
     def test_contact_create(self):
         faux_account_id = uuid.uuid4()
