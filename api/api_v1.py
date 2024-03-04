@@ -69,7 +69,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None):
 
 @router.post("/adoptions/renew", auth=has_auth, tags=["user"])
 def create_adoption(request, payload: AdoptionRenewalFormSchema):
-    renewal_form_handler_url = "https://www2.openstax.org/l/218812/2022-06-14/zldbyb"
+    renewal_form_handler_url = settings.ACCOUNT_ENGAGEMENT_FORM_HANDLERS['renewal']
 
     http = urllib3.PoolManager()
     encoded_data = urllib.parse.urlencode(payload.dict()).encode('utf-8')
