@@ -102,3 +102,6 @@ class AdoptionRenewalFormSchema(Schema):
     accounts_uuid: str
     adoption_json: str
     renewal_date: Optional[datetime.date]
+
+class AdoptionRenewalSchema(Schema):
+    adoption_json: str

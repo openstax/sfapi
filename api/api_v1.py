@@ -79,6 +79,18 @@ def create_adoption(request, payload: AdoptionRenewalFormSchema):
         return 500, {"detail": "Failed to submit renewal form."}
     return 200, {"status": "success"}
 
+# Another option: just update the contact adoptionJSON from Salesforce
+@router.post("/adoptions/renewal", auth=has_auth, tags=["user"])
+def create_adoption(request, adoption_json: str):
+
+    # Validate the JSON and return 422 if it's not valid
+
+    contact = get_user_contact(request)
+    contact.adoption_json = adoption_json
+    contact.save()
+
+    return 200, {"status": "success"}
+
 
 # Add the endpoints to the API
 api.add_router("", router)
