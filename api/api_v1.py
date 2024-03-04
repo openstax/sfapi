@@ -1,3 +1,6 @@
+import urllib
+import urllib3
+
 from sentry_sdk import capture_message
 from django.conf import settings
 from sf.models.adoption import Adoption
@@ -63,6 +66,18 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None):
         return 404, {"detail": "No adoptions found."}
 
     return {"count": len(contact_adoptions), "adoptions": contact_adoptions}
+
+@router.post("/adoptions/renew", auth=has_auth, tags=["user"])
+def create_adoption(request, payload: AdoptionRenewalFormSchema):
+    renewal_form_handler_url = "https://www2.openstax.org/l/218812/2022-06-14/zldbyb"
+
+    http = urllib3.PoolManager()
+    encoded_data = urllib.parse.urlencode(payload.dict()).encode('utf-8')
+    response = http.request('POST', renewal_form_handler_url, body=encoded_data)
+    if response.status != 200:
+        capture_message(f"Failed to submit renewal form. Status: {response.data}")
+        return 500, {"detail": "Failed to submit renewal form."}
+    return 200, {"status": "success"}
 
 
 # Add the endpoints to the API

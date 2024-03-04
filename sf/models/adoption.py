@@ -14,7 +14,7 @@ class Adoption(models.SalesforceModel):
     last_activity_date = models.DateField(db_column='LastActivityDate', sf_read_only=models.READ_ONLY, blank=True,
                                           null=True)
     class_start_date = models.DateField(db_column='Class_Start_Date__c', blank=True, null=True)
-    opportunity = models.ForeignKey(Opportunity, on_delete=models.DO_NOTHING, sf_read_only=models.READ_ONLY, db_column='Opportunity__c', max_length=18)
+    opportunity = models.ForeignKey(Opportunity, on_delete=models.DO_NOTHING, db_column='Opportunity__c', max_length=18)
     confirmation_date = models.DateField(db_column='Confirmation_Date__c', blank=True, null=True)
     name = models.CharField(db_column='Name__c', max_length=255, blank=True, null=True)
     base_year = models.DecimalField(db_column='Base_Year__c', max_digits=4, decimal_places=0, blank=True, null=True)

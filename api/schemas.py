@@ -91,3 +91,14 @@ class AdoptionSchema(Schema):
 class AdoptionsSchema(Schema):
     count: int
     adoptions: List[AdoptionSchema]
+
+class AdoptionRenewalFormSchema(Schema):
+    subject_interest: str
+    application_source: str
+    first_name: str
+    last_name: str
+    school: str
+    email: str
+    accounts_uuid: str
+    adoption_json: str
+    renewal_date: Optional[datetime.date]
