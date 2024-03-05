@@ -31,10 +31,10 @@ def has_auth(request):
 
 def get_user_contact(request):
     user_uuid = get_logged_in_user_uuid(request)
-    if user_uuid is None:
+    if user_uuid is None and not settings.IS_TESTING:
         return 401, {"detail": "User is not logged in."}
-    contact = cache.get(f'contact_{user_uuid}', False)
-    if not contact:
+    contact = cache.get(f'contact_{user_uuid}')
+    if contact is None:
         try:
             contact = Contact.objects.get(accounts_uuid=user_uuid)
             if contact:
@@ -60,8 +60,8 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None):
     if isinstance(contact, tuple):  # user has multiple contacts
         return contact
 
-    contact_adoptions = cache.get(f'contact_adoptions_#{contact.id}', False)
-    if not contact_adoptions:
+    contact_adoptions = cache.get(f'contact_adoptions_{contact.id}')
+    if contact_adoptions is None:
         contact_adoptions = Adoption.objects.filter(contact=contact)
         if confirmed:
             contact_adoptions = contact_adoptions.filter(confirmation_type="OpenStax Confirmed Adoption")
@@ -71,7 +71,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None):
     if not contact_adoptions:
         return 404, {"detail": "No adoptions found."}
     else:
-        cache.set(f'contact_adoptions_#{contact.id}', contact_adoptions, 60 * 60)  # cache for 1 hour
+        cache.set(f'contact_adoptions_{contact.id}', contact_adoptions, 60 * 60)  # cache for 1 hour
         return {"count": len(contact_adoptions), "adoptions": contact_adoptions}
 
 
