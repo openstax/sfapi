@@ -127,6 +127,27 @@ DATABASE_ROUTERS = [
     "salesforce.router.ModelRouter"
 ]
 
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+REDIS_USER = os.getenv('REDIS_USER')
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = os.getenv('REDIS_PORT', '6379')
+REDIS_DB = os.getenv('REDIS_DB', '0')
+# Does REDIT_URL contain all these params in aws?
+REDIS_CONNECTION_STRING = f'redis://{REDIS_USER}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+# Cache
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_CONNECTION_STRING,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PASSWORD": REDIS_PASSWORD
+        }
+    }
+}
+
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

@@ -1,5 +1,6 @@
 from sentry_sdk import capture_message
 from django.conf import settings
+from django.core.cache import cache
 from sf.models.adoption import Adoption
 from sf.models.contact import Contact
 from openstax_accounts.functions import get_logged_in_user_uuid
@@ -30,15 +31,19 @@ def has_auth(request):
 
 def get_user_contact(request):
     user_uuid = get_logged_in_user_uuid(request)
-    try:
-        contact = Contact.objects.get(accounts_uuid=user_uuid)
-    except Contact.DoesNotExist:
-        # Want to see why this would be called for a user without a contact, might get noisy (but also wasteful is not caught)
-        capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
-        return 404, {"detail": "User does not have a valid Salesforce Contact."}
-    except Contact.MultipleObjectsReturned:
-        capture_message(f"User {user_uuid} has multiple Salesforce Contacts.")
-        return 422, {"detail": "User has multiple Salesforce Contacts. This has been reported to the Data team for resolution."}
+    if user_uuid is None:
+        return 401, {"detail": "User is not logged in."}
+    contact = cache.get(f'contact_{user_uuid}')
+    if not contact:
+        try:
+            contact = Contact.objects.get(accounts_uuid=user_uuid)
+            if contact:
+                cache.set(f'contact_{user_uuid}', contact, 60*60*24*7)  # cache for 1 week
+        except Contact.DoesNotExist:
+            capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
+            return 404, {"detail": f"User {user_uuid} does not have a valid Salesforce Contact."}
+        except Contact.MultipleObjectsReturned:
+            capture_message(f"User {user_uuid} has multiple Salesforce Contacts.")
 
     return contact
 
@@ -52,17 +57,22 @@ def user(request):
 @throttle(SalesforceAPIRateThrottle)
 def adoptions(request, confirmed: bool = None, assumed: bool = None):
     contact = get_user_contact(request)
+    if isinstance(contact, tuple):  # user has multiple contacts
+        return contact
 
-    contact_adoptions = Adoption.objects.filter(contact=contact)
-    if confirmed:
-        contact_adoptions = contact_adoptions.filter(confirmation_type="OpenStax Confirmed Adoption")
-    if assumed:
-        contact_adoptions = contact_adoptions.exclude(confirmation_type="OpenStax Confirmed Adoption")
+    contact_adoptions = cache.get(f'contact_adoptions_#{contact.id}')
+    if not contact_adoptions:
+        contact_adoptions = Adoption.objects.filter(contact=contact)
+        if confirmed:
+            contact_adoptions = contact_adoptions.filter(confirmation_type="OpenStax Confirmed Adoption")
+        if assumed:
+            contact_adoptions = contact_adoptions.exclude(confirmation_type="OpenStax Confirmed Adoption")
 
     if not contact_adoptions:
         return 404, {"detail": "No adoptions found."}
-
-    return {"count": len(contact_adoptions), "adoptions": contact_adoptions}
+    else:
+        cache.set(f'contact_adoptions_#{contact.id}', contact_adoptions, 60 * 60)  # cache for 1 hour
+        return {"count": len(contact_adoptions), "adoptions": contact_adoptions}
 
 
 # Add the endpoints to the API
