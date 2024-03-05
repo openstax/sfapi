@@ -133,8 +133,13 @@ REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = os.getenv('REDIS_PORT', '6379')
 REDIS_DB = os.getenv('REDIS_DB', '0')
-# Does REDIT_URL contain all these params in aws?
-REDIS_CONNECTION_STRING = f'redis://{REDIS_USER}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+# TODO: Does REDIT_URL contain the username/password in aws? If so, no need to build this here, just use REDIS_URL
+REDIS_URL = os.getenv('REDIS_URL', f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}')
+# Set the connection string based on the environment, local and testing don't use username/password
+if ENVIRONMENT in ['local', 'testing']:
+    REDIS_CONNECTION_STRING = REDIS_URL
+else:
+    REDIS_CONNECTION_STRING = f'redis://{REDIS_USER}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
 # Cache
 CACHES = {
     "default": {
