@@ -35,9 +35,11 @@ else:
     if ENVIRONMENT == 'prod':
         # Prod only
         ALLOWED_HOSTS = ['salesforce.openstax.org']
+        ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', 'https://accounts.openstax.org')
     else:
         # All non-local and non-prod environments
         ALLOWED_HOSTS = [f"{ENVIRONMENT}.salesforce.openstax.org", f"{ENVIRONMENT}.salesforce.sandbox.openstax.org"]
+        ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', f"https://{ENVIRONMENT}.accounts.openstax.org")
 
 ADMINS = ('SF Admin', 'sfadmin@openstax.org')
 
@@ -69,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'users.middleware.OpenAPIOpenStaxAuthenticationMiddleware',
 ]
 # CSRF_COOKIE_SECURE = True
 # SESSION_COOKIE_SECURE = True
@@ -79,8 +82,14 @@ MIDDLEWARE = [
 # SECURE_HSTS_SECONDS = 31536000  # 1 year
 
 if DEBUG:
-    CORS_ORIGIN_ALLOW_ALL = True
     MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https://\w+\.openstax\.org$",
+    ]
+    CORS_ALLOW_CREDENTIALS = True
+    SESSION_COOKIE_SAMESITE = None
+    SESSION_COOKIE_DOMAIN = ".openstax.org"
+    SESSION_COOKIE_NAME = 'oxa_dev'
 
 ROOT_URLCONF = 'sfapi.urls'
 
@@ -163,14 +172,31 @@ SSO_COOKIE_NAME = os.getenv('SSO_COOKIE_NAME', 'oxa')
 SIGNATURE_PUBLIC_KEY = os.getenv('SSO_SIGNATURE_PUBLIC_KEY')
 ENCRYPTION_PRIVATE_KEY = os.getenv('SSO_ENCRYPTION_PRIVATE_KEY')
 
-# Sentry settings
-sentry_sdk.init(
-    dsn=os.getenv('SENTRY_DSN'),
-    integrations=[DjangoIntegration()],
-    traces_sample_rate=0.2, # 20% of transactions will be sent to sentry
-    send_default_pii=True,  # this will send the user id of admin users only to sentry to help with debugging
-    environment=ENVIRONMENT
-)
+if ENVIRONMENT == 'prod':
+    ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', 'https://accounts.openstax.org')
+elif ENVIRONMENT == 'local':
+    ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', 'http://localhost:2999')
+    OAUTHLIB_INSECURE_TRANSPORT = 1
+else:
+    ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', f"https://{ENVIRONMENT}.accounts.openstax.org")
+
+AUTHORIZATION_URL = os.getenv('ACCOUNTS_AUTHORIZATION_URL', f'{ACCOUNTS_URL}/oauth/authorize')
+ACCESS_TOKEN_URL = os.getenv('ACCOUNTS_ACCESS_TOKEN_URL', f'{ACCOUNTS_URL}/oauth/token')
+USER_QUERY = os.getenv('ACCOUNTS_USER_QUERY', f'{ACCOUNTS_URL}/api/user?')
+USERS_QUERY = os.getenv('ACCOUNTS_USERS_QUERY', f'{ACCOUNTS_URL}/api/users?')
+SOCIAL_AUTH_OPENSTAX_KEY = os.getenv('SOCIAL_AUTH_OPENSTAX_KEY')
+SOCIAL_AUTH_OPENSTAX_SECRET = os.getenv('SOCIAL_AUTH_OPENSTAX_SECRET')
+
+if not LOCAL or TEST:
+    # Sentry settings - disabled for local and testing
+    sentry_sdk.init(
+        dsn=os.getenv('SENTRY_DSN'),
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=0.2, # 20% of transactions will be sent to sentry
+        send_default_pii=True,  # this will send the user id of admin users only to sentry to help with debugging
+        environment=ENVIRONMENT,
+        release=RELEASE_VERSION,
+    )
 
 
 # Cronjobs (when needed)
