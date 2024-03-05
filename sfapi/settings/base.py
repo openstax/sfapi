@@ -13,7 +13,11 @@ from django.utils.log import DEFAULT_LOGGING
 # Load environment variables from .env file
 load_dotenv()
 
-ENVIRONMENT = os.getenv('ENVIRONMENT', 'local')
+# Determine environment based on command line arguments
+TEST = 'test' in sys.argv
+LOCAL = 'runserver' in sys.argv
+
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'test' if TEST else 'local')
 RELEASE_VERSION = os.getenv('RELEASE_VERSION')
 DEPLOYMENT_VERSION = os.getenv('DEPLOYMENT_VERSION')
 IS_TESTING = os.getenv('IS_TESTING', 'False')
@@ -24,8 +28,8 @@ BASE_DIR = os.path.join(os.path.dirname(__file__), '..', '..')
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # check if running local dev server - else default to DEBUG=False
-if len(sys.argv) > 1:
-    DEBUG = (sys.argv[1] == 'runserver')
+if LOCAL:
+    DEBUG = True
 else:
     DEBUG = False
 
@@ -127,7 +131,7 @@ DATABASE_ROUTERS = [
     "salesforce.router.ModelRouter"
 ]
 
-REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+# Cache settings
 REDIS_USER = os.getenv('REDIS_USER')
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
@@ -140,18 +144,20 @@ if ENVIRONMENT in ['local', 'testing']:
     REDIS_CONNECTION_STRING = REDIS_URL
 else:
     REDIS_CONNECTION_STRING = f'redis://{REDIS_USER}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
-# Cache
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": REDIS_CONNECTION_STRING,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PASSWORD": REDIS_PASSWORD
-        }
+            "PASSWORD": REDIS_PASSWORD,
+            "IGNORE_EXCEPTIONS": True,  # this works without redis, so don't kill app if redis is down
+        },
+        "KEY_PREFIX": "sfapi",
+        "TIMEOUT": 60*15  # default to a 15 min cache unless specified
     }
 }
-
 
 
 # Password validation
