@@ -132,6 +132,13 @@ DATABASES = {
     }
 }
 
+# Account Engagement Form Handlers
+ACCOUNT_ENGAGEMENT_FORM_HANDLERS = {
+    'renewal': os.getenv('RENEWAL_FORM_HANDLER', 'https://www2.openstax.org/l/218812/2022-06-14/zldbyb'),
+    'adoption': os.getenv('ADOPTION_FORM_HANDLER', 'https://www2.openstax.org/l/218812/2021-10-21/tdphnv'),
+    'interest': os.getenv('INTEREST_FORM_HANDLER', 'https://www2.openstax.org/l/218812/2021-10-21/tdphmz'),
+}
+
 DATABASE_ROUTERS = [
     "salesforce.router.ModelRouter"
 ]
