@@ -46,6 +46,7 @@ def get_user_contact(request):
         except Contact.MultipleObjectsReturned:
             sentry_sdk.capture_message(f"User {user_uuid} has multiple Salesforce Contacts.")
 
+    sentry_sdk.set_user({"contact_id": contact.id})
     return contact
 
 # API endpoints, responses are defined in schemas.py
@@ -62,7 +63,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None):
         return contact
 
     contact_adoptions = cache.get(f'contact_adoptions_{contact.id}')
-    cache_hit = True
+    cache_hit = contact_adoptions
     if contact_adoptions is None:
         contact_adoptions = Adoption.objects.filter(contact=contact)
         if confirmed:
@@ -73,7 +74,6 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None):
     if not contact_adoptions:
         return 404, {"detail": "No adoptions found."}
     else:
-        cache_hit = False
         cache.set(f'contact_adoptions_{contact.id}', contact_adoptions, 60 * 60)  # cache for 1 hour
         return {"count": len(contact_adoptions), "adoptions": contact_adoptions, "cache_hit": cache_hit}
 
