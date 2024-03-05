@@ -33,7 +33,7 @@ def get_user_contact(request):
     user_uuid = get_logged_in_user_uuid(request)
     if user_uuid is None:
         return 401, {"detail": "User is not logged in."}
-    contact = cache.get(f'contact_{user_uuid}')
+    contact = cache.get(f'contact_{user_uuid}', False)
     if not contact:
         try:
             contact = Contact.objects.get(accounts_uuid=user_uuid)
@@ -60,7 +60,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None):
     if isinstance(contact, tuple):  # user has multiple contacts
         return contact
 
-    contact_adoptions = cache.get(f'contact_adoptions_#{contact.id}')
+    contact_adoptions = cache.get(f'contact_adoptions_#{contact.id}', False)
     if not contact_adoptions:
         contact_adoptions = Adoption.objects.filter(contact=contact)
         if confirmed:
