@@ -91,3 +91,10 @@ class AdoptionSchema(Schema):
 class AdoptionsSchema(Schema):
     count: int
     adoptions: List[AdoptionSchema]
+
+###############
+# Email Lists #
+###############
+class EmailListSchema(Schema):
+    id: int
+    name: str

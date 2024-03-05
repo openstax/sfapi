@@ -1,9 +1,11 @@
+import json
 from sentry_sdk import capture_message
 from django.conf import settings
 from sf.models.adoption import Adoption
 from sf.models.contact import Contact
 from openstax_accounts.functions import get_logged_in_user_uuid
-from .schemas import ErrorSchema, AdoptionsSchema, ContactSchema
+from engagement.functions import get_prospect_lists
+from .schemas import ErrorSchema, AdoptionsSchema, ContactSchema, EmailListSchema
 
 from ninja_extra import NinjaExtraAPI, throttle, Router
 from ninja_extra.throttling import UserRateThrottle
@@ -64,6 +66,13 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None):
         return 404, {"detail": "No adoptions found."}
 
     return {"count": len(contact_adoptions), "adoptions": contact_adoptions}
+
+@router.get("/lists", auth=has_auth, response={200: EmailListSchema, possible_error_codes: ErrorSchema}, tags=["user"])
+@throttle(SalesforceAPIRateThrottle)
+def lists(request):
+    contact = get_user_contact(request)
+    prospect_lists = get_prospect_lists(contact.id)
+    return prospect_lists
 
 
 # Add the endpoints to the API
