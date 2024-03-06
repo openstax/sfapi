@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'api',
     'users',
     'salesforce',
+    'cacheops',
 ]
 
 AUTH_USER_MODEL = 'users.User'
@@ -138,21 +139,35 @@ REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = os.getenv('REDIS_PORT', '6379')
 REDIS_DB = os.getenv('REDIS_DB', '0')
 REDIS_PROTOCOL = 'rediss' if REDIS_PASSWORD else 'redis'
-REDIS_URL = os.getenv('REDIS_URL', f'{REDIS_PROTOCOL}://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}')
+REDIS_URL = os.getenv('REDIS_URL', f'{REDIS_PROTOCOL}://{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}')
 
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PASSWORD": REDIS_PASSWORD,
-            "IGNORE_EXCEPTIONS": True,  # this works without redis, so don't kill app if redis is down
-        },
-        "KEY_PREFIX": "sfapi",
-        "TIMEOUT": 60*15  # default to a 15-min cache unless specified
-    }
+if REDIS_PASSWORD:
+    CACHEOPS_REDIS = f'{REDIS_PROTOCOL}://{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+else:
+    CACHEOPS_REDIS = f'{REDIS_PROTOCOL}://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": REDIS_URL,
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#             "PASSWORD": REDIS_PASSWORD,
+#             "IGNORE_EXCEPTIONS": True,  # this works without redis, so don't kill app if redis is down
+#         },
+#         "KEY_PREFIX": "sfapi",
+#         "TIMEOUT": 60*15  # default to a 15-min cache unless specified
+#     }
+# }
+
+CACHEOPS = {
+    # Automatically cache any Adoption.objects.get() calls for 5 minutes
+    'sf.adoption': {'ops': 'all', 'timeout': 60*5},
+
+    # Automatically cache any Contact.objects.get() calls for 1 week, since contacts don't change often
+    'sf.contact': {'ops': 'all', 'timeout': 60*60*24*7},
 }
+CACHEOPS_DEGRADE_ON_FAILURE = True
 
 
 # Password validation

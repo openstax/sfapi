@@ -91,4 +91,3 @@ class AdoptionSchema(Schema):
 class AdoptionsSchema(Schema):
     count: int
     adoptions: List[AdoptionSchema]
-    cache_hit: Optional[bool]

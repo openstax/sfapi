@@ -1,6 +1,5 @@
 import sentry_sdk
 from django.conf import settings
-from django.core.cache import cache
 from sf.models.adoption import Adoption
 from sf.models.contact import Contact
 from openstax_accounts.functions import get_logged_in_user_uuid
@@ -34,17 +33,13 @@ def get_user_contact(request):
     if user_uuid is None and not settings.IS_TESTING:
         return 401, {"detail": "User is not logged in."}
 
-    contact = cache.get(f'contact_{user_uuid}')
-    if contact is None:
-        try:
-            contact = Contact.objects.get(accounts_uuid=user_uuid)
-            if contact:
-                cache.set(f'contact_{user_uuid}', contact, 60*60*24*7)  # cache for 1 week
-        except Contact.DoesNotExist:
-            sentry_sdk.capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
-            return 404, {"detail": f"User {user_uuid} does not have a valid Salesforce Contact."}
-        except Contact.MultipleObjectsReturned:
-            sentry_sdk.capture_message(f"User {user_uuid} has multiple Salesforce Contacts.")
+    try:
+        contact = Contact.objects.get(accounts_uuid=user_uuid)
+    except Contact.DoesNotExist:
+        sentry_sdk.capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
+        return 404, {"detail": f"User {user_uuid} does not have a valid Salesforce Contact."}
+    except Contact.MultipleObjectsReturned:
+        sentry_sdk.capture_message(f"User {user_uuid} has multiple Salesforce Contacts.")
 
     sentry_sdk.set_user({"contact_id": contact.id})
     return contact
@@ -62,20 +57,16 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None):
     if isinstance(contact, tuple):  # user has multiple contacts
         return contact
 
-    contact_adoptions = cache.get(f'contact_adoptions_{contact.id}')
-    cache_hit = contact_adoptions
-    if contact_adoptions is None:
-        contact_adoptions = Adoption.objects.filter(contact=contact)
-        if confirmed:
-            contact_adoptions = contact_adoptions.filter(confirmation_type="OpenStax Confirmed Adoption")
-        if assumed:
-            contact_adoptions = contact_adoptions.exclude(confirmation_type="OpenStax Confirmed Adoption")
+    contact_adoptions = Adoption.objects.filter(contact=contact)
+    if confirmed:
+        contact_adoptions = contact_adoptions.filter(confirmation_type="OpenStax Confirmed Adoption")
+    if assumed:
+        contact_adoptions = contact_adoptions.exclude(confirmation_type="OpenStax Confirmed Adoption")
 
     if not contact_adoptions:
         return 404, {"detail": "No adoptions found."}
     else:
-        cache.set(f'contact_adoptions_{contact.id}', contact_adoptions, 60 * 60)  # cache for 1 hour
-        return {"count": len(contact_adoptions), "adoptions": contact_adoptions, "cache_hit": cache_hit}
+        return {"count": len(contact_adoptions), "adoptions": contact_adoptions}
 
 
 # Add the endpoints to the API
