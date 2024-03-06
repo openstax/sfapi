@@ -83,10 +83,6 @@ MIDDLEWARE = [
 # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # SECURE_HSTS_SECONDS = 31536000  # 1 year
 
-if DEBUG:
-    CORS_ORIGIN_ALLOW_ALL = True
-    MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
-
 ROOT_URLCONF = 'sfapi.urls'
 
 TEMPLATES = [
@@ -132,17 +128,15 @@ DATABASE_ROUTERS = [
     "salesforce.router.ModelRouter"
 ]
 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 # Cache settings
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = os.getenv('REDIS_PORT', '6379')
 REDIS_DB = os.getenv('REDIS_DB', '0')
 REDIS_PROTOCOL = 'rediss' if REDIS_PASSWORD else 'redis'
-
-if REDIS_PASSWORD:
-    REDIS_URL = f'{REDIS_PROTOCOL}://{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
-else:
-    REDIS_URL = f'{REDIS_PROTOCOL}://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+REDIS_URL = f'{REDIS_PROTOCOL}://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
 
 CACHES = {
     "default": {
@@ -187,27 +181,20 @@ USE_TZ = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'public', 'static')
 STATIC_URL = 'static/'
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 # OpenStax SSO cookie settings
 SSO_COOKIE_NAME = os.getenv('SSO_COOKIE_NAME', 'oxa')
 SIGNATURE_PUBLIC_KEY = os.getenv('SSO_SIGNATURE_PUBLIC_KEY')
 ENCRYPTION_PRIVATE_KEY = os.getenv('SSO_ENCRYPTION_PRIVATE_KEY')
 
 # Sentry settings
-sentry_sdk.init(
-    dsn=os.getenv('SENTRY_DSN'),
-    integrations=[DjangoIntegration()],
-    traces_sample_rate=0.2, # 20% of transactions will be sent to sentry
-    send_default_pii=True,  # this will send the user id of admin users only to sentry to help with debugging
-    environment=ENVIRONMENT
-)
-
-
-# Cronjobs (when needed)
-CRONTAB_COMMAND_PREFIX = os.getenv('CRONTAB_COMMAND_PREFIX', '')
-CRONTAB_COMMAND_SUFFIX = os.getenv('CRONTAB_COMMAND_SUFFIX', '')
-CRONTAB_LOCK_JOBS = os.getenv('CRONTAB_LOCK_JOBS') != 'False'
+if not all((LOCAL, TEST)):
+    sentry_sdk.init(
+        dsn=os.getenv('SENTRY_DSN'),
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=0.2,  # 20% of transactions will be sent to sentry
+        send_default_pii=True,  # this will send the user id of admin users only to sentry to help with debugging
+        environment=ENVIRONMENT
+    )
 
 
 # Logging
