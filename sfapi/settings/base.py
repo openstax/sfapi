@@ -59,7 +59,6 @@ INSTALLED_APPS = [
     'api',
     'users',
     'salesforce',
-    'cacheops',
     'redisboard',
 ]
 
