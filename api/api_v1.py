@@ -35,13 +35,13 @@ def get_user_contact(request):
 
     try:
         contact = Contact.objects.get(accounts_uuid=user_uuid)
+        sentry_sdk.set_user({"contact_id": contact.id})
     except Contact.DoesNotExist:
         sentry_sdk.capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
         return 404, {"detail": f"User {user_uuid} does not have a valid Salesforce Contact."}
     except Contact.MultipleObjectsReturned:
         sentry_sdk.capture_message(f"User {user_uuid} has multiple Salesforce Contacts.")
 
-    sentry_sdk.set_user({"contact_id": contact.id})
     return contact
 
 # API endpoints, responses are defined in schemas.py

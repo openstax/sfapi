@@ -146,19 +146,19 @@ if REDIS_PASSWORD:
 else:
     CACHEOPS_REDIS = f'{REDIS_PROTOCOL}://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
 
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": REDIS_URL,
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#             "PASSWORD": REDIS_PASSWORD,
-#             "IGNORE_EXCEPTIONS": True,  # this works without redis, so don't kill app if redis is down
-#         },
-#         "KEY_PREFIX": "sfapi",
-#         "TIMEOUT": 60*15  # default to a 15-min cache unless specified
-#     }
-# }
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PASSWORD": REDIS_PASSWORD,
+            "IGNORE_EXCEPTIONS": True,  # this works without redis, so don't kill app if redis is down
+        },
+        "KEY_PREFIX": "sfapi",
+        "TIMEOUT": 60*15  # default to a 15-min cache unless specified
+    }
+}
 
 CACHEOPS = {
     # Automatically cache any Adoption.objects.get() calls for 5 minutes
