@@ -39,9 +39,11 @@ else:
     if ENVIRONMENT == 'prod':
         # Prod only
         ALLOWED_HOSTS = ['salesforce.openstax.org']
+        ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', 'https://accounts.openstax.org')
     else:
         # All non-local and non-prod environments
         ALLOWED_HOSTS = [f"{ENVIRONMENT}.salesforce.openstax.org", f"{ENVIRONMENT}.salesforce.sandbox.openstax.org"]
+        ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', f"https://{ENVIRONMENT}.accounts.openstax.org")
 
 ADMINS = ('SF Admin', 'sfadmin@openstax.org')
 
@@ -74,6 +76,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'users.middleware.OpenAPIOpenStaxAuthenticationMiddleware',
 ]
 # CSRF_COOKIE_SECURE = True
 # SESSION_COOKIE_SECURE = True
@@ -185,6 +188,7 @@ STATIC_URL = 'static/'
 SSO_COOKIE_NAME = os.getenv('SSO_COOKIE_NAME', 'oxa')
 SIGNATURE_PUBLIC_KEY = os.getenv('SSO_SIGNATURE_PUBLIC_KEY')
 ENCRYPTION_PRIVATE_KEY = os.getenv('SSO_ENCRYPTION_PRIVATE_KEY')
+
 
 # Sentry settings
 if not all((LOCAL, TEST)):

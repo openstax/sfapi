@@ -9,6 +9,7 @@ from .schemas import ErrorSchema, AdoptionsSchema, ContactSchema
 from ninja_extra import NinjaExtraAPI, throttle, Router
 from ninja_extra.throttling import UserRateThrottle
 
+
 api = NinjaExtraAPI(
     version="1.0.0",  # Do not exceed 1.x.x in this file, create api_v2.py for new versions; NO breaking changes!
     title="OpenStax Salesforce API",
