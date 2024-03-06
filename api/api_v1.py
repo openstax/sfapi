@@ -1,5 +1,6 @@
 import sentry_sdk
 from django.conf import settings
+from django.core.cache import cache
 from sf.models.adoption import Adoption
 from sf.models.contact import Contact
 from openstax_accounts.functions import get_logged_in_user_uuid
@@ -33,15 +34,19 @@ def get_user_contact(request):
     if user_uuid is None and not settings.IS_TESTING:
         return 401, {"detail": "User is not logged in."}
 
+    contact = cache.get(f"sfapi:contact:{user_uuid}")
+    if contact is not None:
+        return contact
+
     try:
         contact = Contact.objects.get(accounts_uuid=user_uuid)
         sentry_sdk.set_user({"contact_id": contact.id})
+        cache.set(f"sfapi:contact:{user_uuid}", contact, 60*60*24*7)  # Cache the contact for 1 week (in seconds)
     except Contact.DoesNotExist:
         sentry_sdk.capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
         return 404, {"detail": f"User {user_uuid} does not have a valid Salesforce Contact."}
     except Contact.MultipleObjectsReturned:
         sentry_sdk.capture_message(f"User {user_uuid} has multiple Salesforce Contacts.")
-
     return contact
 
 # API endpoints, responses are defined in schemas.py
@@ -54,8 +59,10 @@ def user(request):
 @throttle(SalesforceAPIRateThrottle)
 def adoptions(request, confirmed: bool = None, assumed: bool = None):
     contact = get_user_contact(request)
-    if isinstance(contact, tuple):  # user has multiple contacts
-        return contact
+
+    contact_adoptions = cache.get(f"sfapi:adoptions:{contact.id}")
+    if contact_adoptions is not None:
+        return {"count": len(contact_adoptions), "adoptions": contact_adoptions}
 
     contact_adoptions = Adoption.objects.filter(contact=contact)
     if confirmed:
@@ -66,6 +73,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None):
     if not contact_adoptions:
         return 404, {"detail": "No adoptions found."}
     else:
+        cache.set(f"sfapi:adoptions:{contact.id}", contact_adoptions, 60*10)
         return {"count": len(contact_adoptions), "adoptions": contact_adoptions}
 
 

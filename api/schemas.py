@@ -85,6 +85,7 @@ class AdoptionSchema(Schema):
     school: str = Field(alias="opportunity.account.name")
     confirmation_type: Optional[str]
     students: Optional[int]
+    savings: Optional[float]
     how_using: Optional[str]
     confirmation_date: datetime.date
 
