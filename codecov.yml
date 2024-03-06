@@ -7,6 +7,6 @@ ignore:
   - "*tests.py"
   - 'manage.py'
   - '*/migrations/*'
-  - '*settings.py'
+  - '*/settings/*'
   - '*wsgi.py'
   - '*asgi.py'
