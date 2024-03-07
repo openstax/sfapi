@@ -127,6 +127,7 @@ DATABASES = {
 }
 
 SALESFORCE_API_RATE_LIMIT = os.getenv('SALESFORCE_API_RATE_LIMIT', '20/min')  # x/sec x/min x/hour
+SALESFORCE_API_USE_ALERT_THRESHOLD = os.getenv('SALESFORCE_API_USE_ALERT_THRESHOLD', 0.5)  # 50% of the limit
 
 # Make sure to have sfdx/sf cli installed, you will be prompted to authenticate if you aren't
 if USE_SFDX_AUTH:
@@ -162,6 +163,10 @@ CACHES = {
         "TIMEOUT": 60*15  # default to a 15-min cache unless specified
     }
 }
+
+# These are settings for easily overriding the cache timeout in local.py for local development
+CONTACT_CACHE_TIMEOUT = 60*60*24*7  # 1 week
+ADOPTIONS_CACHE_TIMEOUT = 60*60  # 1 hour
 
 
 # Password validation

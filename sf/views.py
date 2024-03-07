@@ -15,7 +15,8 @@ def info(request):
 def sf_api_usage():
     api_usage = connections['salesforce'].connection.api_usage
 
-    if api_usage.api_usage / api_usage.api_limit > 0.5:
+    # Log a message if the API usage is over the set amount, default is 50%
+    if api_usage.api_usage / api_usage.api_limit > settings.SALESFORCE_API_USE_ALERT_THRESHOLD:
         capture_message(f"Salesforce API usage is at {api_usage.api_usage / api_usage.api_limit * 100}%")
 
     return {

@@ -61,12 +61,12 @@ def get_user_contact(request, expire=False):
             "lms": sf_contact.lms,
             "accounts_uuid": sf_contact.accounts_uuid,
             "verification_status": sf_contact.verification_status,
-            "signup_date": sf_contact.signup_date,
+            "signup_date": sf_contact.signup_date.strftime("%Y-%m-%d") if sf_contact.signup_date else None,
             "lead_source": sf_contact.lead_source,
             "cache_create": timezone.now(),
             "api_usage": sf_api_usage(),
         }
-        cache.set(f"sfapi:contact:{user_uuid}", contact, 60*60*24*7)  # Cache the contact for 1 week
+        cache.set(f"sfapi:contact:{user_uuid}", contact, settings.CONTACT_CACHE_TIMEOUT)  # key, value, timeout
     except Contact.DoesNotExist:
         sentry_sdk.capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
         return 404, {"detail": f"User {user_uuid} does not have a valid Salesforce Contact."}
@@ -101,7 +101,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
 
     # build the json for the cache, this keeps the database away from Salesforce on future requests
     # you must update this if you change the AdoptionsSchema or anything it depends on!
-    response_json_for_cache = {
+    response_json = {
         "count": len(contact_adoptions),
         "contact_id": contact['id'],
         "adoptions": [],
@@ -110,7 +110,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
     }
 
     for adoption in contact_adoptions:
-        response_json_for_cache["adoptions"].append({
+        response_json["adoptions"].append({
             "id": adoption.id,
             "book": {
                 "id": adoption.opportunity.book.id,
@@ -128,11 +128,11 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
             "students": adoption.students,
             "savings": adoption.savings,
             "how_using": adoption.how_using,
-            "confirmation_date": adoption.confirmation_date,
+            "confirmation_date": adoption.confirmation_date.strftime("%Y-%m-%d") if adoption.confirmation_date else None,
         })
 
-    cache.set(f"sfapi:adoptions:{contact['id']}", response_json_for_cache, 30)
-    return response_json_for_cache
+    cache.set(f"sfapi:adoptions:{contact['id']}", response_json, settings.ADOPTIONS_CACHE_TIMEOUT)  # key, value, timeout
+    return response_json
 
 
 # Add the endpoints to the API
