@@ -66,7 +66,7 @@ def get_user_contact(request, expire=False):
             "cache_create": timezone.now(),
             "api_usage": sf_api_usage(),
         }
-        cache.set(f"sfapi:contact:{user_uuid}", contact, settings.CONTACT_CACHE_TIMEOUT)  # key, value, timeout
+        cache.set(f"sfapi:contact:{user_uuid}", contact, 60*60*24*7)  # key, value, timeout // 1 week
     except Contact.DoesNotExist:
         sentry_sdk.capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
         return 404, {"detail": f"User {user_uuid} does not have a valid Salesforce Contact."}
@@ -131,7 +131,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
             "confirmation_date": adoption.confirmation_date.strftime("%Y-%m-%d") if adoption.confirmation_date else None,
         })
 
-    cache.set(f"sfapi:adoptions:{contact['id']}", response_json, settings.ADOPTIONS_CACHE_TIMEOUT)  # key, value, timeout
+    cache.set(f"sfapi:adoptions:{contact['id']}", response_json, 60*60)  # key, value, timeout // 1 hour
     return response_json
 
 

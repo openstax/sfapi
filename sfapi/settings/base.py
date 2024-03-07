@@ -164,11 +164,6 @@ CACHES = {
     }
 }
 
-# These are settings for easily overriding the cache timeout in local.py for local development
-CONTACT_CACHE_TIMEOUT = 60*60*24*7  # 1 week
-ADOPTIONS_CACHE_TIMEOUT = 60*60  # 1 hour
-
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {

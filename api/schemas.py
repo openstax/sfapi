@@ -56,7 +56,6 @@ class ContactSchema(Schema):
     first_name: Optional[str]
     last_name: Optional[str]
     full_name: Optional[str]
-    # school: AccountSchema = Field(alias="account") # might be a performance hit, but add if the details are needed
     school: Optional[str]
     role: Optional[str]
     position: Optional[str]
@@ -79,7 +78,6 @@ class ContactsSchema(Schema):
 #############
 class AdoptionSchema(Schema):
     id: str
-    # contact: ContactSchema # might be a performance hit, but add if the details are needed
     book: BookSchema
     base_year: Optional[int]
     school_year: Optional[str]
