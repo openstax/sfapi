@@ -15,5 +15,15 @@ DATABASES['default'] = {
         'PORT': 5432,
     }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
 SALESFORCE_DB_ALIAS = 'default'
-IS_TESTING = True
+IS_TESTING = ENVIRONMENT == 'test'
