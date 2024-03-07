@@ -126,7 +126,7 @@ DATABASES = {
     }
 }
 
-SALESFORCE_API_RATE_LIMIT = os.getenv('SALESFORCE_API_RATE_LIMIT', '5/min')  # x/sec x/min x/hour
+SALESFORCE_API_RATE_LIMIT = os.getenv('SALESFORCE_API_RATE_LIMIT', '20/min')  # x/sec x/min x/hour
 
 # Make sure to have sfdx/sf cli installed, you will be prompted to authenticate if you aren't
 if USE_SFDX_AUTH:

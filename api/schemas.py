@@ -67,6 +67,8 @@ class ContactSchema(Schema):
     verification_status: Optional[str]
     signup_date: Optional[datetime.datetime]
     lead_source: Optional[str]
+    cache_create: Optional[datetime.datetime]
+    api_usage: Optional[dict]
 
 class ContactsSchema(Schema):
     count: int
@@ -92,3 +94,5 @@ class AdoptionsSchema(Schema):
     count: int
     contact_id: str
     adoptions: List[AdoptionSchema]
+    cache_create: Optional[datetime.datetime]
+    api_usage: Optional[dict]

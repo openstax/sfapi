@@ -1,10 +1,12 @@
 import sentry_sdk
+from django.utils import timezone
 from django.conf import settings
 from django.core.cache import cache
 from sf.models.adoption import Adoption
 from sf.models.contact import Contact
 from openstax_accounts.functions import get_logged_in_user_uuid
 from .schemas import ErrorSchema, AdoptionsSchema, ContactSchema
+from sf.views import sf_api_usage
 
 from ninja_extra import NinjaExtraAPI, throttle, Router
 from ninja_extra.throttling import UserRateThrottle
@@ -45,22 +47,24 @@ def get_user_contact(request, expire=False):
         return contact
 
     try:
-        contact = Contact.objects.get(accounts_uuid=user_uuid)
+        sf_contact = Contact.objects.get(accounts_uuid=user_uuid)
         contact = {
-            "id": contact.id,
-            "first_name": contact.first_name,
-            "last_name": contact.last_name,
-            "full_name": contact.full_name,
-            "school": contact.account.name,
-            "role": contact.role,
-            "position": contact.position,
-            "adoption_status": contact.adoption_status,
-            "subject_interest": contact.subject_interest,
-            "lms": contact.lms,
-            "accounts_uuid": contact.accounts_uuid,
-            "verification_status": contact.verification_status,
-            "signup_date": contact.signup_date,
-            "lead_source": contact.lead_source
+            "id": sf_contact.id,
+            "first_name": sf_contact.first_name,
+            "last_name": sf_contact.last_name,
+            "full_name": sf_contact.full_name,
+            "school": sf_contact.account.name,
+            "role": sf_contact.role,
+            "position": sf_contact.position,
+            "adoption_status": sf_contact.adoption_status,
+            "subject_interest": sf_contact.subject_interest,
+            "lms": sf_contact.lms,
+            "accounts_uuid": sf_contact.accounts_uuid,
+            "verification_status": sf_contact.verification_status,
+            "signup_date": sf_contact.signup_date,
+            "lead_source": sf_contact.lead_source,
+            "cache_create": timezone.now(),
+            "api_usage": sf_api_usage(),
         }
         cache.set(f"sfapi:contact:{user_uuid}", contact, 60*60*24*7)  # Cache the contact for 1 week
     except Contact.DoesNotExist:
@@ -69,7 +73,6 @@ def get_user_contact(request, expire=False):
     except Contact.MultipleObjectsReturned:
         sentry_sdk.capture_message(f"User {user_uuid} has multiple Salesforce Contacts.")
 
-    sentry_sdk.set_user({"contact_id": contact['id']})
     return contact
 
 # API endpoints, responses are defined in schemas.py
@@ -83,11 +86,11 @@ def user(request, expire: bool = False):
 def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: bool = False):
     contact = get_user_contact(request, expire)
 
-    contact_adoptions = cache.get(f"sfapi:adoptions:{contact.id}")
+    contact_adoptions = cache.get(f"sfapi:adoptions:{contact['id']}")
     if contact_adoptions is not None:
         return contact_adoptions
 
-    contact_adoptions = Adoption.objects.filter(contact=contact)
+    contact_adoptions = Adoption.objects.filter(contact__id=contact['id'])
     if confirmed:
         contact_adoptions = contact_adoptions.filter(confirmation_type="OpenStax Confirmed Adoption")
     if assumed:
@@ -101,7 +104,9 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
     response_json_for_cache = {
         "count": len(contact_adoptions),
         "contact_id": contact['id'],
-        "adoptions": []
+        "adoptions": [],
+        "cache_create": timezone.now(),
+        "api_usage": sf_api_usage(),
     }
 
     for adoption in contact_adoptions:
@@ -126,7 +131,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
             "confirmation_date": adoption.confirmation_date,
         })
 
-    cache.set(f"sfapi:adoptions:{contact.id}", response_json_for_cache, 30)
+    cache.set(f"sfapi:adoptions:{contact['id']}", response_json_for_cache, 30)
     return response_json_for_cache
 
 
