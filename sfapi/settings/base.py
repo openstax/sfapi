@@ -125,6 +125,9 @@ DATABASES = {
         'HOST': os.getenv('SALESFORCE_HOST', 'https://test.salesforce.com'),
     }
 }
+
+SALESFORCE_API_RATE_LIMIT = os.getenv('SALESFORCE_API_RATE_LIMIT', '5/min')  # x/sec x/min x/hour
+
 # Make sure to have sfdx/sf cli installed, you will be prompted to authenticate if you aren't
 if USE_SFDX_AUTH:
     DATABASES['salesforce']['AUTH'] = 'salesforce.auth.SfdxOrgWebAuth'

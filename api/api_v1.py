@@ -18,10 +18,10 @@ router = Router()
 
 possible_error_codes = frozenset([401, 404, 422])
 
+# TODO: consider this considering caching of requests is now in place
 # Throttling for Salesforce endpoints to prevent API calls going over the limit
 class SalesforceAPIRateThrottle(UserRateThrottle):
-    rate = "5/min"
-    scope = 'minutes'
+    rate = settings.SALESFORCE_API_RATE_LIMIT
 
 # Authentication decorator to check if the user is authenticated with OpenStax Accounts
 def has_auth(request):
