@@ -13,6 +13,10 @@ from django.utils.log import DEFAULT_LOGGING
 # Load environment variables from .env file
 load_dotenv()
 
+# Override this in local.py to use an easier way to locally authenticate with Salesforce
+# Be sure SALESFORCE_USERNAME is set to your SF username
+USE_SFDX_AUTH = False
+
 # Determine environment based on command line arguments
 TEST = 'test' in sys.argv
 LOCAL = 'runserver' in sys.argv or 'runserver_plus' in sys.argv
@@ -54,14 +58,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders',
-    'ninja',
-    'ninja_extra',
-    'sf',
-    'api',
-    'users',
-    'salesforce',
-    'redisboard',
+    # contrib
+    'salesforce',  # to generate models for Salesforce objects
+    'redisboard',  # a django admin page for redis status
+    'ninja',  # the django-ninja api framework
+    'ninja_extra',  # extends ninja with more features
+    # local apps
+    'sf',  # logic for interacting with Salesforce
+    'api',  # views and schemas for the API
+    'users',  # custom user model and interactions with OpenStax Accounts
 ]
 
 AUTH_USER_MODEL = 'users.User'
@@ -78,13 +83,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'users.middleware.OpenAPIOpenStaxAuthenticationMiddleware',
 ]
-# CSRF_COOKIE_SECURE = True
-# SESSION_COOKIE_SECURE = True
-# SECURE_SSL_REDIRECT = not DEBUG
-#
-# SECURE_HSTS_PRELOAD = True
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# SECURE_HSTS_SECONDS = 31536000  # 1 year
 
 ROOT_URLCONF = 'sfapi.urls'
 
@@ -119,6 +117,7 @@ DATABASES = {
     },
     'salesforce': {
         'ENGINE': 'salesforce.backend',
+        'AUTH': 'salesforce.auth.SalesforcePasswordAuth',
         'CONSUMER_KEY': os.getenv('SALESFORCE_CLIENT_ID', 'replaceme'),
         'CONSUMER_SECRET': os.getenv('SALESFORCE_CLIENT_SECRET', 'replaceme'),
         'USER': os.getenv('SALESFORCE_USERNAME', 'replaceme'),
@@ -126,6 +125,12 @@ DATABASES = {
         'HOST': os.getenv('SALESFORCE_HOST', 'https://test.salesforce.com'),
     }
 }
+# Make sure to have sfdx/sf cli installed, you will be prompted to authenticate if you aren't
+if USE_SFDX_AUTH:
+    DATABASES['salesforce']['AUTH'] = 'salesforce.auth.SfdxOrgWebAuth'
+    DATABASES['salesforce'].pop('CONSUMER_KEY')
+    DATABASES['salesforce'].pop('CONSUMER_SECRET')
+    DATABASES['salesforce'].pop('PASSWORD')
 
 DATABASE_ROUTERS = [
     "salesforce.router.ModelRouter"

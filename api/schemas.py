@@ -53,11 +53,11 @@ class AccountsSchema(Schema):
 ############
 class ContactSchema(Schema):
     id: str
-    first_name: str
-    last_name: str
-    full_name: str
+    first_name: Optional[str]
+    last_name: Optional[str]
+    full_name: Optional[str]
     # school: AccountSchema = Field(alias="account") # might be a performance hit, but add if the details are needed
-    school: str = Field(alias="account.name")
+    school: Optional[str]
     role: Optional[str]
     position: Optional[str]
     adoption_status: Optional[str]
@@ -67,7 +67,6 @@ class ContactSchema(Schema):
     verification_status: Optional[str]
     signup_date: Optional[datetime.datetime]
     lead_source: Optional[str]
-    adoptions_json: Optional[str]
 
 class ContactsSchema(Schema):
     count: int
@@ -79,16 +78,17 @@ class ContactsSchema(Schema):
 class AdoptionSchema(Schema):
     id: str
     # contact: ContactSchema # might be a performance hit, but add if the details are needed
-    book: BookSchema = Field(alias="opportunity.book")
+    book: BookSchema
     base_year: Optional[int]
     school_year: Optional[str]
-    school: str = Field(alias="opportunity.account.name")
+    school: str
     confirmation_type: Optional[str]
     students: Optional[int]
     savings: Optional[float]
     how_using: Optional[str]
-    confirmation_date: datetime.date
+    confirmation_date: Optional[datetime.date]
 
 class AdoptionsSchema(Schema):
     count: int
+    contact_id: str
     adoptions: List[AdoptionSchema]
