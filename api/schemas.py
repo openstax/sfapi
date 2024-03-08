@@ -10,6 +10,7 @@ from ninja import Field, Schema
 # General schema for errors returned by the API, change this if more details are needed with an error response
 # See api_vX.py @api decorator response for usage
 class ErrorSchema(Schema):
+    code: int
     detail: str
 
 ########
@@ -21,12 +22,13 @@ class BookSchema(Schema):
     official_name: str
     type: Optional[str] = Field(description="The type of the book.")
     subject_areas: Optional[str]
-    active_book: Optional[bool]
     website_url: Optional[str]
 
 class BooksSchema(Schema):
     count: int
     books: List[BookSchema]
+    cache_create: Optional[datetime.datetime]
+    cache_expire: Optional[datetime.datetime]
 
 ############
 # Accounts #
@@ -67,7 +69,7 @@ class ContactSchema(Schema):
     signup_date: Optional[datetime.datetime]
     lead_source: Optional[str]
     cache_create: Optional[datetime.datetime]
-    api_usage: Optional[dict]
+    cache_expire: Optional[datetime.datetime]
 
 class ContactsSchema(Schema):
     count: int
@@ -93,4 +95,4 @@ class AdoptionsSchema(Schema):
     contact_id: str
     adoptions: List[AdoptionSchema]
     cache_create: Optional[datetime.datetime]
-    api_usage: Optional[dict]
+    cache_expire: Optional[datetime.datetime]

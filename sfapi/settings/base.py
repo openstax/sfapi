@@ -18,6 +18,8 @@ load_dotenv()
 USE_SFDX_AUTH = False
 
 # Determine environment based on command line arguments
+# These set various things throughout the settings file like, DEBUG, ALLOWED_HOSTS, CACHE, SENTRY, etc.
+# You can override things in your local.py file to better reflect a production environment
 TEST = 'test' in sys.argv
 LOCAL = 'runserver' in sys.argv or 'runserver_plus' in sys.argv
 
@@ -75,14 +77,15 @@ LOGIN_URL = '/admin/login/'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'healthcheck.middleware.HealthCheckMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'users.middleware.OpenAPIOpenStaxAuthenticationMiddleware',
 ]
+if ENVIRONMENT not in ('local', 'test'):
+    MIDDLEWARE.insert(2, 'healthcheck.middleware.HealthCheckMiddleware') # after session, before common
+    MIDDLEWARE.append('sentry_sdk.integrations.django.middleware.SentryMiddleware')
 
 ROOT_URLCONF = 'sfapi.urls'
 
@@ -164,20 +167,20 @@ CACHES = {
     }
 }
 
+# If running locally, use a dummy cache to avoid having to spin up a redis server
+if LOCAL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        }
+    }
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
 
@@ -197,9 +200,19 @@ SSO_COOKIE_NAME = os.getenv('SSO_COOKIE_NAME', 'oxa')
 SIGNATURE_PUBLIC_KEY = os.getenv('SSO_SIGNATURE_PUBLIC_KEY')
 ENCRYPTION_PRIVATE_KEY = os.getenv('SSO_ENCRYPTION_PRIVATE_KEY')
 
+# This list of uuids use the auth decorator has_super_auth, use this to restrict access to certain endpoints
+# during integrations with other systems
+# TODO: This should be replaced with something like oauth before going to production with these endpoints
+SUPER_USERS = os.getenv('SUPER_USERS', [
+    'f8a6b8b8-32f7-4b4d-b6f9-054ab6fb5623',  # MiVo(local)
+    '92e2c837-2cfa-4c42-bc0f-486d4ef19b2d',  # MiVo
+    '85ea80ef-afdf-40cd-8803-fa84ad5a867e',  # DeMo
+    'c8635454-1e4b-4205-944f-a054aeb9a41c',  # RoJo
+    '1a01d1d7-6551-42ff-9400-23bfeeea4452',  # BrEa
+])
 
 # Sentry settings
-if not all((LOCAL, TEST)):
+if ENVIRONMENT not in('local', 'test'):
     sentry_sdk.init(
         dsn=os.getenv('SENTRY_DSN'),
         integrations=[DjangoIntegration()],
