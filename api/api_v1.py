@@ -14,7 +14,7 @@ from .schemas import \
     ErrorSchema, \
     AdoptionsSchema, \
     ContactSchema, \
-    BooksSchema, \
+    BooksSchema
 
 from ninja_extra import NinjaExtraAPI, throttle, Router
 from ninja_extra.throttling import UserRateThrottle
