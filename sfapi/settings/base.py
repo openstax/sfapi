@@ -85,7 +85,6 @@ MIDDLEWARE = [
 ]
 if ENVIRONMENT not in ('local', 'test'):
     MIDDLEWARE.insert(2, 'healthcheck.middleware.HealthCheckMiddleware') # after session, before common
-    MIDDLEWARE.append('sentry_sdk.integrations.django.middleware.SentryMiddleware')
 
 ROOT_URLCONF = 'sfapi.urls'
 
