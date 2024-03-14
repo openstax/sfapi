@@ -187,14 +187,14 @@ def books(request, expire: bool = False):
         "cache_expire": calculate_cache_expire(BOOK_CACHE_DURATION),
     }
 
-    for book in books:
+    for book in sf_books:
         response_json["books"].append({
-            "id": sf_books.id,
-            "name": sf_books.name,
-            "official_name": sf_books.official_name,
-            "type": sf_books.type,
-            "subject_areas": sf_books.subject_areas,
-            "website_url": sf_books.website_url,
+            "id": book.id,
+            "name": book.name,
+            "official_name": book.official_name,
+            "type": book.type,
+            "subject_areas": book.subject_areas,
+            "website_url": book.website_url,
         })
 
     cache.set("sfapi:books", response_json, BOOK_CACHE_DURATION)
