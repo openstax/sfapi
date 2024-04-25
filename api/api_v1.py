@@ -104,6 +104,10 @@ def get_user_contact(request, expire=False):
 @throttle(SalesforceAPIRateThrottle)
 def user(request, expire: bool = False):
     return get_user_contact(request, expire)
+    contact = get_user_contact(request, expire)
+    if not contact or not isinstance(contact, dict):
+        return 404, {'code': 404, 'detail': 'No contact found.'}
+    return contact
 
 #############
 # Adoptions #
@@ -112,6 +116,9 @@ def user(request, expire: bool = False):
 @throttle(SalesforceAPIRateThrottle)
 def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: bool = False):
     contact = get_user_contact(request, expire)
+
+    if not contact or not isinstance(contact, dict):
+        return 404, {'code': 404, 'detail': 'No contact found.'}
 
     contact_adoptions = cache.get(f"sfapi:adoptions{confirmed}:{assumed}:{contact['id']}")
     if contact_adoptions is not None:
