@@ -84,7 +84,18 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 if ENVIRONMENT not in ('local', 'test'):
-    MIDDLEWARE.insert(2, 'healthcheck.middleware.HealthCheckMiddleware') # after session, before common
+    MIDDLEWARE.insert(2, 'healthcheck.middleware.HealthCheckMiddleware')  # after session, before common
+
+CORS_ALLOW_CREDENTIALS = True
+SESSION_COOKIE_SAMESITE = 'None'
+
+if ENVIRONMENT not in ('local', 'test'):
+    SESSION_COOKIE_DOMAIN = '.openstax.org'
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https://\w+\.openstax\.org",
+    ]
+else:
+    CORS_ORIGIN_ALLOW_ALL = True
 
 ROOT_URLCONF = 'sfapi.urls'
 
