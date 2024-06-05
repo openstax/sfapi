@@ -115,23 +115,9 @@ def user(request, expire: bool = False):
         return 404, {'code': 404, 'detail': 'No contact found.'}
     return contact
 
-@router.get("/contacts2", tags=["user"])
-def contacts2(request):
-    user_uuid = get_logged_in_user_uuid(request)
-    contact = get_contact(user_uuid)
-    if not contact or not isinstance(contact, dict):
-        return 404, {'code': 404, 'detail': 'No contact found.'}
-    return contact
-
 #############
 # Adoptions #
 #############
-@router.get("/adoptions2", tags=["user"])
-def adoptions2(request):
-    user_uuid = get_logged_in_user_uuid(request)
-    adoptions = get_adoptions(user_uuid)
-    return adoptions
-
 @router.get("/adoptions", auth=has_auth, response={200: AdoptionsSchema, possible_error_codes: ErrorSchema}, tags=["user"])
 @throttle(SalesforceAPIRateThrottle)
 def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: bool = False):
@@ -234,6 +220,9 @@ def books(request, expire: bool = False):
 @router.get("/schools", auth=has_super_auth, response={200: AccountsSchema, possible_error_codes: ErrorSchema}, tags=["core"])
 @throttle(SalesforceAPIRateThrottle)
 def schools(request, name: str = None, city: str = None, expire: bool = False):
+    if len(name) < 3 or len(city) < 3:
+        return 422, {'code': 422, 'detail': 'The query must be at least 3 characters long.'}
+
     if expire:
         cache.delete(f"sfapi:schools:{name}")
 

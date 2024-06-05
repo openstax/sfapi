@@ -1,5 +1,7 @@
+# This connection is not currently being used, but is here for future use - see django-salesforce and .models dir
 from contextlib import ContextDecorator
 from django.conf import settings
+
 from django.contrib.sessions.backends.db import SessionStore
 from simple_salesforce import Salesforce as SimpleSalesforce
 
