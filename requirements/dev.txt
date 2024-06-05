@@ -1,2 +1,6 @@
 -r base.txt
 pipdeptree
+django-extensions
+watchdog # to keep Werkzeug memory/apu usage lower
+Werkzeug # needed for django-extensions runserver_plus
+

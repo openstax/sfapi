@@ -1,9 +1,7 @@
 from sentry_sdk import capture_message
-from django.shortcuts import render
 from django.http import JsonResponse
 from django.db import connections
 from django.conf import settings
-from salesforce.dbapi.driver import ApiUsage
 from openstax_accounts.functions import get_logged_in_user_uuid
 from api.api_v1 import has_super_auth
 

@@ -61,11 +61,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # contrib
+    'corsheaders',  # for allowing cross-origin requests
     'salesforce',  # to generate models for Salesforce objects
     'redisboard',  # a django admin page for redis status
     'ninja',  # the django-ninja api framework
     'ninja_extra',  # extends ninja with more features
     # local apps
+    'db',  # models for the local database storage of Salesforce data (to both cache and store data before upload to SF)
     'sf',  # logic for interacting with Salesforce
     'api',  # views and schemas for the API
     'users',  # custom user model and interactions with OpenStax Accounts
@@ -77,6 +79,7 @@ LOGIN_URL = '/admin/login/'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -85,9 +88,6 @@ MIDDLEWARE = [
 ]
 if ENVIRONMENT not in ('local', 'test'):
     MIDDLEWARE.insert(2, 'healthcheck.middleware.HealthCheckMiddleware')  # after session, before common
-
-CORS_ALLOW_CREDENTIALS = True
-SESSION_COOKIE_SAMESITE = 'None'
 
 if ENVIRONMENT not in ('local', 'test'):
     SESSION_COOKIE_DOMAIN = '.openstax.org'
@@ -116,7 +116,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'sfapi.wsgi.application'
-
 
 # Database
 DATABASES = {

@@ -1,6 +1,6 @@
 import datetime
 from typing import List, Optional
-from ninja import Field, Schema
+from ninja import Field, Schema, FilterSchema
 
 # The schema for the response of endpoints are here
 # The fields set here will be for validation (if creating), serialization, and /api/docs
@@ -37,17 +37,25 @@ class AccountSchema(Schema):
     id: str
     name: str
     type: Optional[str]
-    country: Optional[str] = Field(alias="billing_country")
-    state: Optional[str] = Field(alias="billing_state")
-    city: Optional[str] = Field(alias="billing_state")
+    country: Optional[str]
+    state: Optional[str]
+    city: Optional[str]
     lms: Optional[str]
     sheer_id_school_name: Optional[str]
 
 class AccountsSchema(Schema):
     count: int
-    limit: int
-    offset: int
+    total_schools: int
     schools: List[AccountSchema]
+    cache_create: Optional[datetime.datetime]
+    cache_expire: Optional[datetime.datetime]
+
+class AccountFilterSchema(FilterSchema):
+    name: Optional[str] = None
+    type: Optional[str] = None
+    country: Optional[str] = None
+    state: Optional[str] = None
+    city: Optional[str] = None
 
 
 ############
@@ -96,3 +104,14 @@ class AdoptionsSchema(Schema):
     adoptions: List[AdoptionSchema]
     cache_create: Optional[datetime.datetime]
     cache_expire: Optional[datetime.datetime]
+
+#########
+# Cases #
+#########
+
+class CaseSchema(Schema):
+    subject: str
+    description: str
+    product: Optional[str]
+    feature: Optional[str]
+    issue: Optional[str]

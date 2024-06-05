@@ -25,11 +25,11 @@ class Account(models.SalesforceModel):
                                 ('Vocational', 'Vocational'),
                                 ('Child', 'Child')
                             ], blank=True, null=True)
-    billing_city = models.CharField(db_column='BillingCity', max_length=40, blank=True, null=True)
-    billing_state = models.CharField(db_column='BillingState', max_length=80, blank=True, null=True)
-    billing_country = models.CharField(db_column='BillingCountry', max_length=80, blank=True, null=True)
-    billing_state_code = models.CharField(db_column='BillingStateCode', max_length=10,  blank=True, null=True)
-    billing_country_code = models.CharField(db_column='BillingCountryCode', max_length=10,
+    city = models.CharField(db_column='BillingCity', max_length=40, blank=True, null=True)
+    state = models.CharField(db_column='BillingState', max_length=80, blank=True, null=True)
+    country = models.CharField(db_column='BillingCountry', max_length=80, blank=True, null=True)
+    state_code = models.CharField(db_column='BillingStateCode', max_length=10,  blank=True, null=True)
+    country_code = models.CharField(db_column='BillingCountryCode', max_length=10,
                                             default='US', blank=True, null=True)
     created_date = models.DateTimeField(db_column='CreatedDate', sf_read_only=models.READ_ONLY, null=True)
     last_modified_date = models.DateTimeField(db_column='LastModifiedDate', sf_read_only=models.READ_ONLY, null=True)

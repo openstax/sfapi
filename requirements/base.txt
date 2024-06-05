@@ -4,7 +4,7 @@ django-ninja==1.1.0
 django-ninja-extra==0.20.4
 django-redis==5.4.0
 django-redisboard==8.4.0
-django-salesforce-agpl==5.0
+django-salesforce-agpl==5.0.2
 django-openstax-accounts
 django-openstax-healthcheck
 psycopg2==2.9.9
@@ -12,3 +12,4 @@ PyJWE==1.0.0
 PyJWT==2.8.0
 python-dotenv==1.0.1
 sentry-sdk==1.40.4
+simple_salesforce==1.12.5
