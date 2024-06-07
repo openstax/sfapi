@@ -69,13 +69,46 @@ def get_user_contact(request, expire=False):
             sf_contact = Contact.objects.get(accounts_uuid=user_uuid)
         except Contact.DoesNotExist:
             try:
-                sf_contact = SFContact.objects.get(accounts_id=user_uuid)
+                sf_contact = SFContact.objects.get(accounts_uuid=user_uuid)
+                # cache locally if it's not in the database
+                account = Account.objects.get(id=sf_contact.account.id)
+                Contact.objects.update_or_create(
+                    id=sf_contact.id,
+                    defaults={
+                        "first_name": sf_contact.first_name,
+                        "last_name": sf_contact.last_name,
+                        "full_name": sf_contact.full_name,
+                        "email": sf_contact.email,
+                        "role": sf_contact.role,
+                        "position": sf_contact.position,
+                        "title": sf_contact.title,
+                        "account": account,
+                        "adoption_status": sf_contact.adoption_status,
+                        "verification_status": sf_contact.verification_status,
+                        "accounts_uuid": sf_contact.accounts_uuid,
+                        "accounts_id": sf_contact.accounts_id,
+                        "signup_date": sf_contact.signup_date,
+                        "lead_source": sf_contact.lead_source,
+                        "lms": sf_contact.lms,
+                        "last_modified_date": sf_contact.last_modified_date,
+                        "subject_interest": sf_contact.subject_interest,
+                    },
+                )
             except SFContact.DoesNotExist:
-                return 404, {'code': 404, 'detail': f'No contact found for user {user_uuid}.'}
+                return 404, {'code': 404, 'detail': f'Salesforce: No contact found for user {user_uuid}.'}
             except SFContact.MultipleObjectsReturned:
                 sf_contact = SFContact.objects.filter(accounts_id=user_uuid).latest('last_modified_date')
                 sentry_sdk.capture_message(
                     f"User {user_uuid} has multiple Salesforce Contacts. Returning the last modified ({sf_contact.id}).")
+    except Contact.DoesNotExist:
+        sentry_sdk.capture_message(f'User {user_uuid} does not have a valid Salesforce Contact.')
+        return 404, {'code': 404, 'detail': f'User {user_uuid} does not have a valid Contact.'}
+    except Contact.MultipleObjectsReturned:
+        sf_contact = Contact.objects.filter(accounts_id=user_uuid).latest('last_modified_date')
+        sentry_sdk.capture_message(
+            f"User {user_uuid} has multiple Salesforce Contacts. Returning the last modified ({sf_contact.id}).")
+
+    if sf_contact:
         contact = {
             "id": sf_contact.id,
             "first_name": sf_contact.first_name,
@@ -90,23 +123,12 @@ def get_user_contact(request, expire=False):
             "accounts_uuid": sf_contact.accounts_uuid,
             "verification_status": sf_contact.verification_status,
             "signup_date": sf_contact.signup_date.strftime('%Y-%m-%d') if sf_contact.signup_date else None,
-            "last_modified_date": sf_contact.signup_date.strftime('%Y-%m-%d') if sf_contact.last_modified_date else None,
+            "last_modified_date": sf_contact.signup_date.strftime(
+                '%Y-%m-%d') if sf_contact.last_modified_date else None,
             "lead_source": sf_contact.lead_source,
-            "cache_create": timezone.now(),
-            "cache_expire": calculate_cache_expire(CONTACT_CACHE_DURATION),
         }
-    except Contact.DoesNotExist:
-        sentry_sdk.capture_message(f'User {user_uuid} does not have a valid Salesforce Contact.')
-        return 404, {'code': 404, 'detail': f'User {user_uuid} does not have a valid Salesforce Contact.'}
-    except Contact.MultipleObjectsReturned:
-        sf_contact = Contact.objects.filter(accounts_id=user_uuid).latest('last_modified_date')
-        sentry_sdk.capture_message(
-            f"User {user_uuid} has multiple Salesforce Contacts. Returning the last modified ({sf_contact.id}).")
 
-    if contact:
         return contact
-    else:
-        return 404, {'code': 404, 'detail': f'No contact found for user {user_uuid}.'}
 
 # API endpoints, responses are defined in schemas.py
 ###########
@@ -200,9 +222,7 @@ def books(request):
     # you must update this if you change the BooksSchema or anything it depends on!
     response_json = {
         "count": len(sf_books),
-        "books": [],
-        "cache_create": timezone.now(),
-        "cache_expire": calculate_cache_expire(BOOK_CACHE_DURATION),
+        "books": []
     }
 
     for book in sf_books:
@@ -222,16 +242,14 @@ def books(request):
 ###########
 @router.get("/schools", auth=has_super_auth, response={200: AccountsSchema, possible_error_codes: ErrorSchema}, tags=["core"])
 @throttle(SalesforceAPIRateThrottle)
-def schools(request, name: str = None, city: str = None):
-    if len(name) < 3 or len(city) < 3:
-        return 422, {'code': 422, 'detail': 'The query must be at least 3 characters long.'}
-
+def schools(request, name: str = None):
     if name:
         sf_schools = Account.objects.filter(name__icontains=name)
-    elif city:
-        sf_schools = Account.objects.filter(city__icontains=city)
     else:
         return 422, {'code': 422, 'detail': 'You must provide a name or city to search by.'}
+
+    if len(name) < 3:
+        return 422, {'code': 422, 'detail': 'The query must be at least 3 characters long.'}
 
     if not sf_schools:
         return 404, {'code': 404, 'detail': 'No schools found.'}
@@ -242,8 +260,6 @@ def schools(request, name: str = None, city: str = None):
         "count": len(sf_schools),
         "total_schools": Account.objects.count(),
         "schools": [],
-        "cache_create": timezone.now(),
-        "cache_expire": calculate_cache_expire(ACCOUNT_CACHE_DURATION),
     }
 
     for school in sf_schools:

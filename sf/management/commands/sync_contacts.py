@@ -4,8 +4,6 @@ from sf.models.contact import Contact as SFContact
 from db.models import Contact
 from django.utils import timezone
 
-from sf.utils import lazy_bulk_fetch
-
 class Command(BaseCommand):
     help = "sync books with the local database"
 

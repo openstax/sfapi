@@ -27,8 +27,6 @@ class BookSchema(Schema):
 class BooksSchema(Schema):
     count: int
     books: List[BookSchema]
-    cache_create: Optional[datetime.datetime]
-    cache_expire: Optional[datetime.datetime]
 
 ############
 # Accounts #
@@ -47,8 +45,6 @@ class AccountsSchema(Schema):
     count: int
     total_schools: int
     schools: List[AccountSchema]
-    cache_create: Optional[datetime.datetime]
-    cache_expire: Optional[datetime.datetime]
 
 class AccountFilterSchema(FilterSchema):
     name: Optional[str] = None
@@ -80,8 +76,6 @@ class ContactSchema(Schema):
     signup_date: Optional[datetime.datetime]
     last_modified_date: Optional[datetime.datetime]
     lead_source: Optional[str]
-    cache_create: Optional[datetime.datetime]
-    cache_expire: Optional[datetime.datetime]
 
 class ContactsSchema(Schema):
     count: int
