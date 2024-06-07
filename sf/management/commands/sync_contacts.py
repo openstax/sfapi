@@ -11,7 +11,7 @@ class Command(BaseCommand):
     def update_or_create_contact(self, salesforce_contacts):
         for contact in salesforce_contacts:
             try:
-                account = Account.objects.get(id=contact.account_id)
+                account = Account.objects.get(id=contact.account.id)
             except Account.DoesNotExist:
                 capture_exception(Exception(f"Account with id {contact.accounts_id} does not exist"))
                 continue

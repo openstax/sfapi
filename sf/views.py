@@ -17,16 +17,22 @@ def info(request):
         return JsonResponse({'details': 'Unauthorized'}, status=401)
 
 def sf_api_usage():
-    api_usage = connections['salesforce'].connection.api_usage
+    try:
+        api_usage = connections['salesforce'].connection.api_usage
 
-    # Log a message if the API usage is over the set amount, default is 50%
-    if api_usage.api_usage / api_usage.api_limit > settings.SALESFORCE_API_USE_ALERT_THRESHOLD:
-        capture_message(f"Salesforce API usage is at {api_usage.api_usage / api_usage.api_limit * 100}%")
+        # Log a message if the API usage is over the set amount, default is 50%
+        if api_usage.api_usage / api_usage.api_limit > settings.SALESFORCE_API_USE_ALERT_THRESHOLD:
+            capture_message(f"Salesforce API usage is at {api_usage.api_usage / api_usage.api_limit * 100}%")
 
-    return {
-        'api_usage': api_usage.api_usage,
-        'api_limit': api_usage.api_limit,
-    }
+        return {
+            'api_usage': api_usage.api_usage,
+            'api_limit': api_usage.api_limit,
+        }
+    except AttributeError:
+        return {
+            'api_usage': 'N/A',
+            'api_limit': 'N/A',
+        }
 
 def release_information():
     return {
