@@ -6,7 +6,7 @@ from django.utils import timezone
 from sentry_sdk import capture_exception
 
 class Command(BaseCommand):
-    help = "sync books with the local database"
+    help = "sync contacts with the local database, only fetch contacts that have been modified in the last 30 days"
 
     def update_or_create_contact(self, salesforce_contacts):
         for contact in salesforce_contacts:
@@ -43,11 +43,16 @@ class Command(BaseCommand):
         # we only need to update contacts that have been changed in the last 30 days
         # TODO: daily cron should be even less delta
         if Contact.objects.count() < 100:  # the first sync needs to grab them all
-            salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False)
+            salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False, accounts_uuid__isnull=False)
             self.stdout.write(f"First sync, fetching all contacts ({salesforce_contacts.count()} total)")
         else:
+            # TODO: we can just get the latest last_modified_date and only fetch the ones from the day forward
             delta = timezone.now() - timezone.timedelta(30)
-            salesforce_contacts = SFContact.objects.order_by('last_modified_date').filter(verification_status__isnull=False, last_modified_date__gte=delta)
+            salesforce_contacts = (SFContact.objects.order_by('last_modified_date')
+                                   .filter(verification_status__isnull=False,
+                                           accounts_uuid__isnull=False,
+                                           last_modified_date__gte=delta)
+                                   )
             self.stdout.write(f"Incremental Sync, fetching {salesforce_contacts.count()}")
         self.update_or_create_contact(salesforce_contacts)
 

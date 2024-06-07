@@ -5,7 +5,8 @@ from db.models import Account
 from django.utils import timezone
 
 class Command(BaseCommand):
-    help = "sync books with the local database"
+    help = "sync accounts (schools) with the local database, only fetch accounts that have been modified in the last 30 days"
+    # TODO: this needs to know if an account was deleted in salesforce and delete it in the local db
 
     def update_or_create_account(self, salesforce_accounts):
         for account in salesforce_accounts:
@@ -37,6 +38,7 @@ class Command(BaseCommand):
             salesforce_accounts = SFAccount.objects.all()
             self.stdout.write(f"First sync, fetching all accounts ({salesforce_accounts.count()} total)")
         else:
+            # TODO: we can just get the latest last_modified_date and only fetch the ones from the day forward
             delta = timezone.now() - timezone.timedelta(30)
             salesforce_accounts = SFAccount.objects.order_by('last_modified_date').filter(last_modified_date__gte=delta)
             self.stdout.write(f"Incremental Sync, fetching {salesforce_accounts.count()}")

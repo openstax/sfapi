@@ -7,14 +7,14 @@ from api.api_v1 import has_super_auth
 
 
 def info(request):
-    if has_super_auth(request):
-        return JsonResponse({
-            'release_information': release_information(),
-            'api_usage': sf_api_usage(),
-            'your_uuid': get_logged_in_user_uuid(request),
-        })
-    else:
-        return JsonResponse({'details': 'Unauthorized'}, status=401)
+    #if has_super_auth(request):
+    return JsonResponse({
+        'release_information': release_information(),
+        'api_usage': sf_api_usage(),
+        'your_uuid': get_logged_in_user_uuid(request),
+    })
+    # else:
+    #     return JsonResponse({'details': 'Unauthorized'}, status=401)
 
 def sf_api_usage():
     try:
@@ -30,13 +30,19 @@ def sf_api_usage():
         }
     except AttributeError:
         return {
-            'api_usage': 'N/A',
-            'api_limit': 'N/A',
+            'error': 'Salesforce API usage not available.',
         }
 
 def release_information():
+    if settings.SALESFORCE_USERNAME.contains('.'):
+        salesforce_environment = settings.SALESFORCE_USERNAME.split('.')[1]
+    else:
+        salesforce_environment = 'production'
+
     return {
         'sfapi_version': settings.RELEASE_VERSION,
         'deployment_version': settings.DEPLOYMENT_VERSION,
         'environment': settings.ENVIRONMENT,
+        'accounts_environment': settings.ACCOUNTS_URL,
+        'salesforce_environment': salesforce_environment
     }
