@@ -143,7 +143,7 @@ def accounts_user(request):
         return {'uuid': user_uuid}
     except Exception as e:
         sentry_sdk.capture_exception(e)
-        return 500, {'code': 500, 'detail': f'An error occurred while fetching the user (Accounts Server: {settings.ACCOUNTS_URL}).'}
+        return 401, {'code': 401, 'detail': f'An error occurred while fetching the user (Accounts Server: {settings.ACCOUNTS_URL}).'}
 
 
 @router.get("/contact", auth=has_auth, response={200: ContactSchema, possible_error_codes: ErrorSchema}, tags=["user"])
@@ -183,6 +183,8 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
     response_json = {
         "count": len(contact_adoptions),
         "contact_id": contact['id'],
+        "total_students": sum([adoption.students for adoption in contact_adoptions]),
+        "total_savings": sum([adoption.savings for adoption in contact_adoptions]),
         "adoptions": [],
         "cache_create": timezone.now(),
         "cache_expire": calculate_cache_expire(ADOPTIONS_CACHE_DURATION),
