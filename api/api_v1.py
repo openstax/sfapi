@@ -5,9 +5,10 @@ from django.utils import timezone
 from django.conf import settings
 from django.core.cache import cache
 from sf.models.adoption import Adoption
-from sf.models.contact import Contact
-from sf.models.book import Book
-from sf.models.account import Account
+from db.models import Contact
+from sf.models.contact import Contact as SFContact
+from db.models import Book
+from db.models import Account
 from sf.models.case import Case
 from openstax_accounts.functions import get_logged_in_user_uuid
 from .schemas import \
@@ -15,23 +16,20 @@ from .schemas import \
     AdoptionsSchema, \
     ContactSchema, \
     BooksSchema, \
-    CaseSchema
-
-from sf.objects.contact import get_contact
-from sf.objects.adoption import get_adoptions
+    CaseSchema, \
+    UserSchema
 
 from .schemas import AccountsSchema
 
 from ninja_extra import NinjaExtraAPI, throttle, Router
 from ninja_extra.throttling import UserRateThrottle
-from ninja import Query
 
 # Cache durations in seconds, calculated with math.prod() to use them in the api
 # A reasonable format is to use math.prod([seconds, minutes, hours, days]) to calculate the duration
-CONTACT_CACHE_DURATION = math.prod([60, 60, 24, 7])  # 1 week
+# CONTACT_CACHE_DURATION = math.prod([60, 60, 24, 7])  # 1 week
 ADOPTIONS_CACHE_DURATION = math.prod([60, 60])  # 1 hour
-BOOK_CACHE_DURATION = math.prod([60, 60, 24, 14])  # 2 weeks
-ACCOUNT_CACHE_DURATION = math.prod([60, 60, 24, 14])  # 2 weeks
+# BOOK_CACHE_DURATION = math.prod([60, 60, 24, 14])  # 2 weeks
+# ACCOUNT_CACHE_DURATION = math.prod([60, 60, 24, 14])  # 2 weeks
 
 api = NinjaExtraAPI(
     version="1.0.0",  # Do not exceed 1.x.x in this file, create api_v2.py for new versions; NO breaking changes!
@@ -66,16 +64,14 @@ def get_user_contact(request, expire=False):
     if user_uuid is None and not settings.IS_TESTING:
         return 401, {'code': 401, 'detail': 'User is not logged in.'}
 
-    if expire:
-        cache.delete(f"sfapi:contact:{user_uuid}")
-        cache.delete(f"sfapi:adoptions:{user_uuid}")
-
-    contact = cache.get(f"sfapi:contact:{user_uuid}")
-    if contact is not None:
-        return contact
-
     try:
-        sf_contact = Contact.objects.get(accounts_uuid=user_uuid)
+        try:
+            sf_contact = Contact.objects.get(accounts_uuid=user_uuid)
+        except Contact.DoesNotExist:
+            try:
+                sf_contact = SFContact.objects.get(accounts_id=user_uuid)
+            except SFContact.DoesNotExist:
+                return 404, {'code': 404, 'detail': f'No contact found for user {user_uuid}.'}
         contact = {
             "id": sf_contact.id,
             "first_name": sf_contact.first_name,
@@ -90,11 +86,11 @@ def get_user_contact(request, expire=False):
             "accounts_uuid": sf_contact.accounts_uuid,
             "verification_status": sf_contact.verification_status,
             "signup_date": sf_contact.signup_date.strftime('%Y-%m-%d') if sf_contact.signup_date else None,
+            "last_modified_date": sf_contact.signup_date.strftime('%Y-%m-%d') if sf_contact.last_modified_date else None,
             "lead_source": sf_contact.lead_source,
             "cache_create": timezone.now(),
             "cache_expire": calculate_cache_expire(CONTACT_CACHE_DURATION),
         }
-        cache.set(f'sfapi:contact:{user_uuid}', contact, CONTACT_CACHE_DURATION)
     except Contact.DoesNotExist:
         sentry_sdk.capture_message(f'User {user_uuid} does not have a valid Salesforce Contact.')
         return 404, {'code': 404, 'detail': f'User {user_uuid} does not have a valid Salesforce Contact.'}
@@ -110,16 +106,19 @@ def get_user_contact(request, expire=False):
 ###########
 # Contact #
 ###########
+@router.get("/user", auth=has_auth, response={200: UserSchema, possible_error_codes: ErrorSchema}, tags=["user"])
+def accounts_user(request):
+    user_uuid = get_logged_in_user_uuid(request)
+    if user_uuid is None and not settings.IS_TESTING:
+        return 401, {'code': 401, 'detail': 'User is not logged in.'}
+    return {'uuid' : user_uuid}
+
 @router.get("/contact", auth=has_auth, response={200: ContactSchema, possible_error_codes: ErrorSchema}, tags=["user"])
 @throttle(SalesforceAPIRateThrottle)
 def user(request, expire: bool = False):
     contact = get_user_contact(request, expire)
     if not contact and not isinstance(contact, dict):
-        user_uuid = get_logged_in_user_uuid(request)
-        if user_uuid:
-            return 404, {'code': 404, 'detail': f'No contact found for user {user_uuid}.'}
-        else:
-            return 401, {'code': 401, 'detail': 'User is not logged in.'}
+        return 404, {'code': 404, 'detail': f'No contact found.'}
     return contact
 
 #############
@@ -186,14 +185,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
 #########
 @router.get("/books", auth=has_super_auth, response={200: BooksSchema, possible_error_codes: ErrorSchema}, tags=["core"])
 @throttle(SalesforceAPIRateThrottle)
-def books(request, expire: bool = False):
-    if expire:
-        cache.delete("sfapi:books")
-
-    books_from_cache = cache.get("sfapi:books")
-    if books_from_cache is not None:
-        return books_from_cache
-
+def books(request):
     sf_books = Book.objects.filter(active_book=True)
     if not sf_books:
         return 404, {'code': 404, 'detail': 'No books found.'}
@@ -216,8 +208,6 @@ def books(request, expire: bool = False):
             "subject_areas": book.subject_areas,
             "website_url": book.website_url,
         })
-
-    cache.set("sfapi:books", response_json, BOOK_CACHE_DURATION)
     return response_json
 
 
@@ -226,16 +216,9 @@ def books(request, expire: bool = False):
 ###########
 @router.get("/schools", auth=has_super_auth, response={200: AccountsSchema, possible_error_codes: ErrorSchema}, tags=["core"])
 @throttle(SalesforceAPIRateThrottle)
-def schools(request, name: str = None, city: str = None, expire: bool = False):
+def schools(request, name: str = None, city: str = None):
     if len(name) < 3 or len(city) < 3:
         return 422, {'code': 422, 'detail': 'The query must be at least 3 characters long.'}
-
-    if expire:
-        cache.delete(f"sfapi:schools:{name}")
-
-    schools_from_cache = cache.get(f"sfapi:schools:{name}")
-    if schools_from_cache is not None:
-        return schools_from_cache
 
     if name:
         sf_schools = Account.objects.filter(name__icontains=name)
@@ -268,8 +251,6 @@ def schools(request, name: str = None, city: str = None, expire: bool = False):
             "lms": school.lms,
             "sheer_id_school_name": school.sheer_id_school_name,
         })
-
-    cache.set(f"sfapi:schools:{name}", response_json, ACCOUNT_CACHE_DURATION)
     return response_json
 
 @router.post("/case", auth=has_super_auth, response={200: CaseSchema, possible_error_codes: ErrorSchema}, tags=["support"])

@@ -22,8 +22,7 @@ class Contact(SalesforceModel):
     signup_date = models.DateTimeField(db_column='Signup_Date__c')
     lead_source = models.CharField(max_length=255, db_column='LeadSource')
     lms = models.CharField(max_length=255, db_column='LMS__c')
-    last_activity_date = models.DateField(db_column='LastActivityDate', verbose_name='Last Activity', sf_read_only=READ_ONLY, blank=True, null=True)
-    last_modified_by = models.CharField(max_length=255, db_column='LastModifiedBy.alias', help_text='This is useful for ignoring integrations user modifications (like b2bma).')
+    last_modified_date = models.DateField(db_column='LastModifiedDate', verbose_name='Last Modified Date', sf_read_only=READ_ONLY, blank=True, null=True)
     subject_interest = models.CharField(db_column='Subject_Interest__c', max_length=4099, verbose_name='Subject Interest', choices=[
         ('Algebra and Trigonometry', 'Algebra and Trigonometry'),
         ('American Government', 'American Government'),

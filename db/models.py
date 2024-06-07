@@ -87,8 +87,7 @@ class Contact(models.Model):
     signup_date = models.DateTimeField()
     lead_source = models.CharField(max_length=255)
     lms = models.CharField(max_length=255)
-    last_activity_date = models.DateField(verbose_name='Last Activity', blank=True, null=True)
-    last_modified_by = models.CharField(max_length=255, help_text='This is useful for ignoring integrations user modifications (like b2bma).')
+    last_modified_date = models.DateField(verbose_name='Last Modified Date', blank=True, null=True)
     subject_interest = models.CharField(max_length=4099, verbose_name='Subject Interest', choices=[
         ('Algebra and Trigonometry', 'Algebra and Trigonometry'),
         ('American Government', 'American Government'),

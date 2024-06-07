@@ -61,6 +61,9 @@ class AccountFilterSchema(FilterSchema):
 ############
 # Contacts #
 ############
+class UserSchema(Schema):
+    uuid: str
+
 class ContactSchema(Schema):
     id: str
     first_name: Optional[str]
@@ -75,6 +78,7 @@ class ContactSchema(Schema):
     accounts_uuid: str
     verification_status: Optional[str]
     signup_date: Optional[datetime.datetime]
+    last_modified_date: Optional[datetime.datetime]
     lead_source: Optional[str]
     cache_create: Optional[datetime.datetime]
     cache_expire: Optional[datetime.datetime]
