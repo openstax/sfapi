@@ -34,8 +34,7 @@ class Command(BaseCommand):
                     "signup_date": contact.signup_date,
                     "lead_source": contact.lead_source,
                     "lms": contact.lms,
-                    "last_modified_date": contact.last_modified_date,
-                    "subject_interest": contact.subject_interest,
+                    "last_modified_date": contact.last_modified_date
                 },
             )
 
