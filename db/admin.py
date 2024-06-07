@@ -5,7 +5,7 @@ from .models import Book, Account, Contact, Opportunity, Adoption
 class AccountAdmin(admin.ModelAdmin):
     list_display = ("name", "type")
     search_fields = ("name", "id")
-    list_filter = ("type", "country", "state", "city")
+    list_filter = ("type", "created_date", "last_modified_date")
 
 admin.site.register(Account, AccountAdmin)
 

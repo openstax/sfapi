@@ -101,7 +101,10 @@ def get_user_contact(request, expire=False):
     except Contact.MultipleObjectsReturned:
         sentry_sdk.capture_message(f"User {user_uuid} has multiple Salesforce Contacts.")
 
-    return contact
+    if contact:
+        return contact
+    else:
+        return 404, {'code': 404, 'detail': f'No contact found for user {user_uuid}.'}
 
 # API endpoints, responses are defined in schemas.py
 ###########
@@ -111,8 +114,12 @@ def get_user_contact(request, expire=False):
 @throttle(SalesforceAPIRateThrottle)
 def user(request, expire: bool = False):
     contact = get_user_contact(request, expire)
-    if not contact or not isinstance(contact, dict):
-        return 404, {'code': 404, 'detail': 'No contact found.'}
+    if not contact and not isinstance(contact, dict):
+        user_uuid = get_logged_in_user_uuid(request)
+        if user_uuid:
+            return 404, {'code': 404, 'detail': f'No contact found for user {user_uuid}.'}
+        else:
+            return 401, {'code': 401, 'detail': 'User is not logged in.'}
     return contact
 
 #############
