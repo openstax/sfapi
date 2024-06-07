@@ -136,10 +136,15 @@ def get_user_contact(request, expire=False):
 ###########
 @router.get("/user", auth=has_auth, response={200: UserSchema, possible_error_codes: ErrorSchema}, tags=["user"])
 def accounts_user(request):
-    user_uuid = get_logged_in_user_uuid(request)
-    if user_uuid is None and not settings.IS_TESTING:
-        return 401, {'code': 401, 'detail': 'User is not logged in.'}
-    return {'uuid' : user_uuid}
+    try:
+        user_uuid = get_logged_in_user_uuid(request)
+        if user_uuid is None:
+            return 401, {'code': 401, 'detail': 'User is not logged in.'}
+        return {'uuid': user_uuid}
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        return 500, {'code': 500, 'detail': f'An error occurred while fetching the user (Accounts Server: {settings.ACCOUNTS_URL}).'}
+
 
 @router.get("/contact", auth=has_auth, response={200: ContactSchema, possible_error_codes: ErrorSchema}, tags=["user"])
 @throttle(SalesforceAPIRateThrottle)
