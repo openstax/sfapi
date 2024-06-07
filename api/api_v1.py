@@ -72,6 +72,10 @@ def get_user_contact(request, expire=False):
                 sf_contact = SFContact.objects.get(accounts_id=user_uuid)
             except SFContact.DoesNotExist:
                 return 404, {'code': 404, 'detail': f'No contact found for user {user_uuid}.'}
+            except SFContact.MultipleObjectsReturned:
+                sf_contact = SFContact.objects.filter(accounts_id=user_uuid).latest('last_modified_date')
+                sentry_sdk.capture_message(
+                    f"User {user_uuid} has multiple Salesforce Contacts. Returning the last modified ({sf_contact.id}).")
         contact = {
             "id": sf_contact.id,
             "first_name": sf_contact.first_name,
@@ -95,7 +99,9 @@ def get_user_contact(request, expire=False):
         sentry_sdk.capture_message(f'User {user_uuid} does not have a valid Salesforce Contact.')
         return 404, {'code': 404, 'detail': f'User {user_uuid} does not have a valid Salesforce Contact.'}
     except Contact.MultipleObjectsReturned:
-        sentry_sdk.capture_message(f"User {user_uuid} has multiple Salesforce Contacts.")
+        sf_contact = Contact.objects.filter(accounts_id=user_uuid).latest('last_modified_date')
+        sentry_sdk.capture_message(
+            f"User {user_uuid} has multiple Salesforce Contacts. Returning the last modified ({sf_contact.id}).")
 
     if contact:
         return contact

@@ -41,7 +41,7 @@ class Command(BaseCommand):
             salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False)
             self.stdout.write(f"First sync, fetching all contacts ({salesforce_contacts.count()} total)")
         else:
-            salesforce_contacts = SFContact.objects.order_by('last_modified_date').filter(last_activity_date__gte=timezone.now() - timezone.timedelta(30))
+            salesforce_contacts = SFContact.objects.order_by('last_modified_date').filter(verification_status__isnull=False, last_modified_date__gte=timezone.now() - timezone.timedelta(30))
             self.stdout.write(f"Incremental Sync, fetching {salesforce_contacts.count()}")
         self.update_or_create_contact(salesforce_contacts)
 
