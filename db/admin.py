@@ -19,6 +19,7 @@ admin.site.register(Book, BookAdmin)
 class ContactAdmin(admin.ModelAdmin):
     list_display = ("full_name", "role", "position", "account")
     search_fields = ("full_name", "role", "position", "account")
+    raw_id_fields = ("account", )
 
 admin.site.register(Contact, ContactAdmin)
 
@@ -26,12 +27,14 @@ class OpportunityAdmin(admin.ModelAdmin):
     list_display = ("name", "account", "stage_name")
     search_fields = ("name", "account")
     list_filter = ("stage_name", )
+    raw_id_fields = ("account", )
 
 admin.site.register(Opportunity, OpportunityAdmin)
 
 class AdoptionAdmin(admin.ModelAdmin):
-    list_display = ("opportunity", "confirmation_type")
-    search_fields = ("book", )
-    list_filter = ("confirmation_type", )
+    list_display = ("contact", "opportunity", "confirmation_type")
+    search_fields = ("contact", "opportunity__book")
+    list_filter = ("confirmation_type", "opportunity__book")
+    raw_id_fields = ("opportunity", "contact")
 
 admin.site.register(Adoption, AdoptionAdmin)

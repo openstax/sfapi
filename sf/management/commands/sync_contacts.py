@@ -1,14 +1,21 @@
 from django.core.management.base import BaseCommand
 
 from sf.models.contact import Contact as SFContact
-from db.models import Contact
+from db.models import Contact, Account
 from django.utils import timezone
+from sentry_sdk import capture_exception
 
 class Command(BaseCommand):
     help = "sync books with the local database"
 
     def update_or_create_contact(self, salesforce_contacts):
         for contact in salesforce_contacts:
+            try:
+                account = Account.objects.get(id=contact.account_id)
+            except Account.DoesNotExist:
+                capture_exception(Exception(f"Account with id {contact.accounts_id} does not exist"))
+                continue
+
             Contact.objects.update_or_create(
                 id=contact.id,
                 defaults={
@@ -19,7 +26,7 @@ class Command(BaseCommand):
                     "role": contact.role,
                     "position": contact.position,
                     "title": contact.title,
-                    "account": contact.account,
+                    "account": account,
                     "adoption_status": contact.adoption_status,
                     "verification_status": contact.verification_status,
                     "accounts_uuid": contact.accounts_uuid,
@@ -35,11 +42,12 @@ class Command(BaseCommand):
     def handle(self, *labels, **options):
         # we only need to update contacts that have been changed in the last 30 days
         # TODO: daily cron should be even less delta
-        if Contact.objects.count() == 0:  # the first sync needs to grab them all
+        if Contact.objects.count() < 100:  # the first sync needs to grab them all
             salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False)
             self.stdout.write(f"First sync, fetching all contacts ({salesforce_contacts.count()} total)")
         else:
-            salesforce_contacts = SFContact.objects.order_by('last_modified_date').filter(verification_status__isnull=False, last_modified_date__gte=timezone.now() - timezone.timedelta(30))
+            delta = timezone.now() - timezone.timedelta(30)
+            salesforce_contacts = SFContact.objects.order_by('last_modified_date').filter(verification_status__isnull=False, last_modified_date__gte=delta)
             self.stdout.write(f"Incremental Sync, fetching {salesforce_contacts.count()}")
         self.update_or_create_contact(salesforce_contacts)
 

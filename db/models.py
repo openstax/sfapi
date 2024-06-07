@@ -55,6 +55,9 @@ class Account(models.Model):
         verbose_name = 'School'
         verbose_name_plural = 'Schools'
 
+    def __str__(self):
+        return self.name
+
 class Book(models.Model):
     id = models.CharField(max_length=18, primary_key=True)
     name = models.CharField(max_length=255)
@@ -67,6 +70,9 @@ class Book(models.Model):
     class Meta:
         verbose_name = 'Book'
         verbose_name_plural = 'Books'
+
+    def __str__(self):
+        return self.official_name
 
 class Contact(models.Model):
     id = models.CharField(max_length=18, primary_key=True)
@@ -87,81 +93,22 @@ class Contact(models.Model):
     signup_date = models.DateTimeField(null=True)
     lead_source = models.CharField(max_length=255, null=True)
     lms = models.CharField(max_length=255, null=True)
-    last_modified_date = models.DateField(verbose_name='Last Modified Date', blank=True, null=True)
-    subject_interest = models.CharField(max_length=4099, verbose_name='Subject Interest', choices=[
-        ('Algebra and Trigonometry', 'Algebra and Trigonometry'),
-        ('American Government', 'American Government'),
-        ('Anatomy & Physiology', 'Anatomy & Physiology'),
-        ('Anthropology', 'Anthropology'),
-        ('AP Bio', 'AP Bio'),
-        ('AP Macro Econ', 'AP Macro Econ'),
-        ('AP Micro Econ', 'AP Micro Econ'),
-        ('AP Physics', 'AP Physics'),
-        ('Astronomy', 'Astronomy'),
-        ('Basic College Math', 'Basic College Math'),
-        ('Biology', 'Biology'),
-        ('Business Ethics', 'Business Ethics'),
-        ('Business Law', 'Business Law'),
-        ('Business Law I Essentials', 'Business Law I Essentials'),
-        ('Business Statistics', 'Business Statistics'),
-        ('Calculus', 'Calculus'),
-        ('Career Readiness', 'Career Readiness'),
-        ('Chem: Atoms First', 'Chem: Atoms First'),
-        ('Chemistry', 'Chemistry'),
-        ('College Algebra', 'College Algebra'),
-        ('College Algebra with Corequisite Support', 'College Algebra with Corequisite Support'),
-        ('College Physics (Algebra)', 'College Physics (Algebra)'),
-        ('College Success', 'College Success'),
-        ('College Success Concise', 'College Success Concise'),
-        ('Concepts of Bio (non-majors)', 'Concepts of Bio (non-majors)'),
-        ('Contemporary Math', 'Contemporary Math'),
-        ('Economics', 'Economics'),
-        ('Elementary Algebra', 'Elementary Algebra'),
-        ('Entrepreneurship', 'Entrepreneurship'),
-        ('Financial Accounting', 'Financial Accounting'),
-        ('Finite Algebra', 'Finite Algebra'),
-        ('HS Physics', 'HS Physics'),
-        ('HS Statistics', 'HS Statistics'),
-        ('Intermediate Algebra', 'Intermediate Algebra'),
-        ('Introduction to Business', 'Introduction to Business'),
-        ('Introduction to Intellectual Property', 'Introduction to Intellectual Property'),
-        ('Introduction to Philosophy', 'Introduction to Philosophy'),
-        ('Introduction to Political Science', 'Introduction to Political Science'),
-        ('Introduction to Sociology', 'Introduction to Sociology'),
-        ('Introductory Business Ethics', 'Introductory Business Ethics'),
-        ('Introductory Business Statistics', 'Introductory Business Statistics'),
-        ('Introductory Statistics', 'Introductory Statistics'),
-        ('LLPH', 'LLPH'),
-        ('Macro Econ', 'Macro Econ'),
-        ('Management', 'Management'),
-        ('Managerial Accounting', 'Managerial Accounting'),
-        ('Microbiology', 'Microbiology'),
-        ('Micro Econ', 'Micro Econ'),
-        ('Organic Chemistry', 'Organic Chemistry'),
-        ('Organizational Behavior', 'Organizational Behavior'),
-        ('Prealgebra', 'Prealgebra'),
-        ('Precalc', 'Precalc'),
-        ('Preparing for College Success', 'Preparing for College Success'),
-        ('Principles of Finance', 'Principles of Finance'),
-        ('Principles of Marketing', 'Principles of Marketing'),
-        ('Psychology', 'Psychology'),
-        ('University Physics (Calc)', 'University Physics (Calc)'),
-        ('US History', 'US History'),
-        ('Workplace Software and Skills', 'Workplace Software and Skills'),
-        ('World History', 'World History'),
-        ('Writing Guide', 'Writing Guide')
-    ], blank=True, null=True)
+    last_modified_date = models.DateTimeField(verbose_name='Last Modified Date', blank=True, null=True)
+    subject_interest = models.CharField(max_length=255, verbose_name='Subject Interest', blank=True, null=True)
 
     class Meta:
         verbose_name = 'Contact'
         verbose_name_plural = 'Contacts'
+
+    def __str__(self):
+        return self.full_name
 
 
 class Opportunity(models.Model):
     id = models.CharField(max_length=18, primary_key=True)
     account = models.ForeignKey(Account, on_delete=models.PROTECT, max_length=18, verbose_name='Account ID', blank=True, null=True)
     record_type_id = models.CharField(max_length=18, verbose_name='Record Type ID', blank=True, null=True)
-    name = models.CharField(max_length=120)
+    name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     stage_name = models.CharField(max_length=255, verbose_name='Stage', choices=[('Confirmed Adoption Won', 'Confirmed Adoption Won'), ('Closed Lost', 'Closed Lost'), ('Unconfirmed', 'Unconfirmed'), ('Lapsed - Book Used Previously Not Currently', 'Lapsed - Book Used Previously Not Currently'), ('Inactive - Book No Longer in Use', 'Inactive - Book No Longer in Use'), ('Assumed - Book Likely in Use', 'Assumed - Book Likely in Use'), ('Active - Book Currently in Use', 'Active - Book Currently in Use')])
     amount = models.DecimalField(max_digits=18, decimal_places=2, verbose_name='Savings: Current', blank=True, null=True)
@@ -191,6 +138,9 @@ class Opportunity(models.Model):
     class Meta:
         verbose_name = 'Opportunity'
         verbose_name_plural = 'Opportunities'
+
+    def __str__(self):
+        return self.name
 
 
 # A user will have many adoptions, but they represent a single book for a single school year
@@ -243,3 +193,6 @@ class Adoption(models.Model):
     class Meta:
         verbose_name = 'Adoption'
         verbose_name_plural = 'Adoptions'
+
+    def __str__(self):
+        return self.name
