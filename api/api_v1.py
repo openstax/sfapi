@@ -180,11 +180,25 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
 
     # build the json for the cache, this keeps the database away from Salesforce on future requests
     # you must update this if you change the AdoptionsSchema or anything it depends on!
+    total_students = 0
+    total_savings = 0.00
+    for adoption in contact_adoptions:
+        if not adoption.students or adoption.students < 0:
+            pass
+        else:
+            total_students += adoption.students
+
+        if not adoption.savings or adoption.savings < 0:
+            pass
+        else:
+            total_savings += adoption.savings
+
+
     response_json = {
         "count": len(contact_adoptions),
         "contact_id": contact['id'],
-        "total_students": sum([adoption.students for adoption in contact_adoptions]),
-        "total_savings": sum([adoption.savings for adoption in contact_adoptions]),
+        "total_students": total_students,
+        "total_savings": total_savings,
         "adoptions": [],
         "cache_create": timezone.now(),
         "cache_expire": calculate_cache_expire(ADOPTIONS_CACHE_DURATION),
