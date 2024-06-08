@@ -140,7 +140,7 @@ DATABASES = {
 
 # Set Salesforce environment based on the host for /info/
 # username, accounting for email period, then env. if the connecting user has a period in their email, this will fail
-SALESFORCE_ENVIRONMENT = DATABASES['salesforce']['USER'].split('.')[2]
+SALESFORCE_ENVIRONMENT = os.getenv('SALESFORCE_USERNAME', 'user@rice.edu.staging').split('.')[2]
 
 # Salesforce API rate limiting
 SALESFORCE_API_RATE_LIMIT = os.getenv('SALESFORCE_API_RATE_LIMIT', '20/min')  # x/sec x/min x/hour
