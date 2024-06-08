@@ -38,6 +38,6 @@ def release_information():
         'sfapi_version': settings.RELEASE_VERSION,
         'deployment_version': settings.DEPLOYMENT_VERSION,
         'environment': settings.ENVIRONMENT,
-        'accounts_environment': settings.ACCOUNTS_URL,
+        'accounts_environment': settings.ACCOUNTS_ENVIRONMENT,
         'salesforce_environment': settings.SALESFORCE_ENVIRONMENT
     }

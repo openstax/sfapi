@@ -39,7 +39,14 @@ if LOCAL:
 else:
     DEBUG = False
 
+# Set Accounts URL and environment for /info/
 ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', 'https://accounts.openstax.org')
+ACCOUNTS_ENVIRONMENT = 'production'
+if 'dev' in ACCOUNTS_URL:
+    ACCOUNTS_ENVIRONMENT = 'dev'
+elif 'staging' in ACCOUNTS_URL:
+    ACCOUNTS_ENVIRONMENT = 'staging'
+
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
@@ -131,7 +138,10 @@ DATABASES = {
     }
 }
 
+# Set Salesforce environment based on the host for /info/
 SALESFORCE_ENVIRONMENT = DATABASES['salesforce']['HOST'].split('//')[1].split('.')[0]
+
+# Salesforce API rate limiting
 SALESFORCE_API_RATE_LIMIT = os.getenv('SALESFORCE_API_RATE_LIMIT', '20/min')  # x/sec x/min x/hour
 SALESFORCE_API_USE_ALERT_THRESHOLD = os.getenv('SALESFORCE_API_USE_ALERT_THRESHOLD', 0.5)  # 50% of the limit
 
