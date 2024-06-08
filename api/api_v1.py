@@ -178,8 +178,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
     if not contact_adoptions:
         return 404, {'code': 404, 'detail': 'No adoptions found'}
 
-    # build the json for the cache, this keeps the database away from Salesforce on future requests
-    # you must update this if you change the AdoptionsSchema or anything it depends on!
+    #  calculate the total students and savings for the adoptions (this could be null :(, so handle that)
     total_students = 0
     total_savings = 0.00
     for adoption in contact_adoptions:
@@ -193,7 +192,8 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
         else:
             total_savings += adoption.savings
 
-
+    # build the json for the cache, this keeps the database away from Salesforce on future requests
+    # you must update this if you change the AdoptionsSchema or anything it depends on!
     response_json = {
         "count": len(contact_adoptions),
         "contact_id": contact['id'],
