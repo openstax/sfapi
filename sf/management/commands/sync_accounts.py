@@ -2,47 +2,24 @@ from django.core.management.base import BaseCommand
 
 from sf.models.account import Account as SFAccount
 from db.models import Account
+from db.functions import update_or_create_accounts
 from django.utils import timezone
 
 class Command(BaseCommand):
-    help = "sync accounts (schools) with the local database, only fetch accounts that have been modified in the last 30 days"
+    help = "sync accounts (schools) with the local database, only fetch accounts that have been modified since the last sync"
     # TODO: this needs to know if an account was deleted in salesforce and delete it in the local db
 
-    def update_or_create_account(self, salesforce_accounts):
-        for account in salesforce_accounts:
-            Account.objects.update_or_create(
-                id=account.id,
-                defaults={
-                    "name": account.name,
-                    "type": account.type,
-                    "country": account.country,
-                    "state": account.state,
-                    "city": account.city,
-                    "country_code": account.country_code,
-                    "state_code": account.state_code,
-                    "created_date": account.created_date,
-                    "last_modified_date": account.last_modified_date,
-                    "last_activity_date": account.last_activity_date,
-                    "lms": account.lms,
-                    "books_adopted": account.books_adopted,
-                    "sheer_id_school_name": account.sheer_id_school_name,
-                    "ipeds_id": account.ipeds_id,
-                    "nces_id": account.nces_id,
-                },
-            )
-
     def handle(self, *labels, **options):
-        # we only need to update accounts that have been changed in the last 30 days
-        # TODO: daily cron should be even less delta
-        if Account.objects.count() == 0:
+        last_sync_object = Account.objects.latest('last_modified_date')
+
+        if Account.objects.count() < 100:
             salesforce_accounts = SFAccount.objects.all()
             self.stdout.write(f"First sync, fetching all accounts ({salesforce_accounts.count()} total)")
         else:
-            # TODO: we can just get the latest last_modified_date and only fetch the ones from the day forward
-            delta = timezone.now() - timezone.timedelta(30)
+            delta = last_sync_object.last_modified_date - timezone.timedelta(1)
             salesforce_accounts = SFAccount.objects.order_by('last_modified_date').filter(last_modified_date__gte=delta)
             self.stdout.write(f"Incremental Sync, fetching {salesforce_accounts.count()}")
-        self.update_or_create_account(salesforce_accounts)
+        created_count = update_or_create_accounts(salesforce_accounts)
 
-        self.stdout.write(self.style.SUCCESS("Accounts synced successfully!"))
+        self.stdout.write(self.style.SUCCESS(f"Accounts synced successfully! {created_count} created."))
 

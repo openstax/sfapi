@@ -2,58 +2,29 @@ from django.core.management.base import BaseCommand
 
 from sf.models.contact import Contact as SFContact
 from db.models import Contact, Account
+from db.functions import update_or_create_contacts
 from django.utils import timezone
 from sentry_sdk import capture_exception
 
 class Command(BaseCommand):
-    help = "sync contacts with the local database, only fetch contacts that have been modified in the last 30 days"
-
-    def update_or_create_contact(self, salesforce_contacts):
-        for contact in salesforce_contacts:
-            try:
-                account = Account.objects.get(id=contact.account.id)
-            except Account.DoesNotExist:
-                capture_exception(Exception(f"Account with id {contact.accounts_id} does not exist"))
-                continue
-
-            Contact.objects.update_or_create(
-                id=contact.id,
-                defaults={
-                    "first_name": contact.first_name,
-                    "last_name": contact.last_name,
-                    "full_name": contact.full_name,
-                    "email": contact.email,
-                    "role": contact.role,
-                    "position": contact.position,
-                    "title": contact.title,
-                    "account": account,
-                    "adoption_status": contact.adoption_status,
-                    "verification_status": contact.verification_status,
-                    "accounts_uuid": contact.accounts_uuid,
-                    "accounts_id": contact.accounts_id,
-                    "signup_date": contact.signup_date,
-                    "lead_source": contact.lead_source,
-                    "lms": contact.lms,
-                    "last_modified_date": contact.last_modified_date
-                },
-            )
+    help = "sync contacts with the local database, only fetch contacts that have been modified 1 day prior to the last sync"
+    # TODO: this needs to know if a contact was deleted in salesforce and delete it in the local db
 
     def handle(self, *labels, **options):
-        # we only need to update contacts that have been changed in the last 30 days
-        # TODO: daily cron should be even less delta
+        last_sync_object = Contact.objects.latest('last_modified_date')
+
         if Contact.objects.count() < 100:  # the first sync needs to grab them all
             salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False, accounts_uuid__isnull=False)
             self.stdout.write(f"First sync, fetching all contacts ({salesforce_contacts.count()} total)")
         else:
-            # TODO: we can just get the latest last_modified_date and only fetch the ones from the day forward
-            delta = timezone.now() - timezone.timedelta(30)
+            delta = last_sync_object.last_modified_date - timezone.timedelta(1)
             salesforce_contacts = (SFContact.objects.order_by('last_modified_date')
                                    .filter(verification_status__isnull=False,
                                            accounts_uuid__isnull=False,
                                            last_modified_date__gte=delta)
                                    )
             self.stdout.write(f"Incremental Sync, fetching {salesforce_contacts.count()}")
-        self.update_or_create_contact(salesforce_contacts)
+        created_count = update_or_create_contacts(salesforce_contacts)
 
-        self.stdout.write(self.style.SUCCESS("Contacts synced successfully!"))
+        self.stdout.write(self.style.SUCCESS(f"Contacts synced successfully! {created_count} created."))
 

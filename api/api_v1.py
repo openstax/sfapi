@@ -71,29 +71,33 @@ def get_user_contact(request, expire=False):
             try:
                 sf_contact = SFContact.objects.get(accounts_uuid=user_uuid)
                 # cache locally if it's not in the database
-                account = Account.objects.get(id=sf_contact.account.id)
-                Contact.objects.update_or_create(
-                    id=sf_contact.id,
-                    defaults={
-                        "first_name": sf_contact.first_name,
-                        "last_name": sf_contact.last_name,
-                        "full_name": sf_contact.full_name,
-                        "email": sf_contact.email,
-                        "role": sf_contact.role,
-                        "position": sf_contact.position,
-                        "title": sf_contact.title,
-                        "account": account,
-                        "adoption_status": sf_contact.adoption_status,
-                        "verification_status": sf_contact.verification_status,
-                        "accounts_uuid": sf_contact.accounts_uuid,
-                        "accounts_id": sf_contact.accounts_id,
-                        "signup_date": sf_contact.signup_date,
-                        "lead_source": sf_contact.lead_source,
-                        "lms": sf_contact.lms,
-                        "last_modified_date": sf_contact.last_modified_date,
-                        "subject_interest": sf_contact.subject_interest,
-                    },
-                )
+                try:
+                    account = Account.objects.get(id=sf_contact.account.id)
+                    Contact.objects.update_or_create(
+                        id=sf_contact.id,
+                        defaults={
+                            "first_name": sf_contact.first_name,
+                            "last_name": sf_contact.last_name,
+                            "full_name": sf_contact.full_name,
+                            "email": sf_contact.email,
+                            "role": sf_contact.role,
+                            "position": sf_contact.position,
+                            "title": sf_contact.title,
+                            "account": account,
+                            "adoption_status": sf_contact.adoption_status,
+                            "verification_status": sf_contact.verification_status,
+                            "accounts_uuid": sf_contact.accounts_uuid,
+                            "accounts_id": sf_contact.accounts_id,
+                            "signup_date": sf_contact.signup_date,
+                            "lead_source": sf_contact.lead_source,
+                            "lms": sf_contact.lms,
+                            "last_modified_date": sf_contact.last_modified_date,
+                            "subject_interest": sf_contact.subject_interest,
+                        },
+                    )
+                except Account.DoesNotExist:
+                    pass  # don't block the request if for some reason the account doesn't exist
+                    sentry_sdk.capture_message(f"Account {sf_contact.account.id} does not exist in local database. Contact: {sf_contact.id}")
             except SFContact.DoesNotExist:
                 return 404, {'code': 404, 'detail': f'Salesforce: No contact found for user {user_uuid}.'}
             except SFContact.MultipleObjectsReturned:
