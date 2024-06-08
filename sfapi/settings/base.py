@@ -88,13 +88,7 @@ MIDDLEWARE = [
 if ENVIRONMENT not in ('local', 'test'):
     MIDDLEWARE.insert(2, 'healthcheck.middleware.HealthCheckMiddleware')  # after session, before common
 
-if ENVIRONMENT not in ('local', 'test'):
-    SESSION_COOKIE_DOMAIN = '.openstax.org'
-    CORS_ALLOWED_ORIGIN_REGEXES = [
-        r"^https://\w+\.openstax\.org",
-    ]
-else:
-    CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_ALLOW_ALL = True
 
 ROOT_URLCONF = 'sfapi.urls'
 
