@@ -180,7 +180,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
 
     #  calculate the total students and savings for the adoptions (this could be null :(, so handle that)
     total_students = 0
-    total_savings = 0.00
+    total_savings = 0
     for adoption in contact_adoptions:
         if not adoption.students or adoption.students < 0:
             pass
