@@ -29,14 +29,14 @@ class AccountTest(TestCase):
         account = Account.objects.create(
             name="Test Account",
             type="Customer - Direct",
-            billing_city="Houston",
-            billing_state="TX",
-            billing_country="USA"
+            city="Houston",
+            state="TX",
+            country="USA"
         )
         self.assertEqual(account.name, "Test Account")
         self.assertEqual(account.type, "Customer - Direct")
-        self.assertEqual(account.billing_city, "Houston")
-        self.assertEqual(account.billing_state, "TX")
-        self.assertEqual(account.billing_country, "USA")
+        self.assertEqual(account.city, "Houston")
+        self.assertEqual(account.state, "TX")
+        self.assertEqual(account.country, "USA")
 
 
