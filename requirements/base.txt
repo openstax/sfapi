@@ -1,5 +1,6 @@
 Django==5.0.2
 django-cors-headers
+django-crontab==0.7.1
 django-ninja==1.1.0
 django-ninja-extra==0.20.4
 django-redis==5.4.0

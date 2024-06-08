@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # contrib
     'corsheaders',  # for allowing cross-origin requests
+    'django_crontab',  # for running cron jobs
     'salesforce',  # to generate models for Salesforce objects
     'redisboard',  # a django admin page for redis status
     'ninja',  # the django-ninja api framework
@@ -78,6 +79,18 @@ INSTALLED_APPS = [
     'api',  # views and schemas for the API
     'users',  # custom user model and interactions with OpenStax Accounts
 ]
+
+# Cron jobs
+# These update the local database with Salesforce data
+CRONJOBS = [
+    ('45 23 * * 6', 'django.core.management.call_command', ['sync_books']),  # sync books every Saturday at 11:45pm
+    ('0 5 * * *', 'django.core.management.call_command', ['sync_accounts']),  # sync accounts (schools) every day at 5am
+    ('*/15 6-20 * * *', 'django.core.management.call_command', ['sync_contacts']),  # sync contacts every 15 minutes from 6am-8pm
+]
+
+CRONTAB_COMMAND_PREFIX = os.getenv('CRONTAB_COMMAND_PREFIX', '')
+CRONTAB_COMMAND_SUFFIX = os.getenv('CRONTAB_COMMAND_SUFFIX', '')
+CRONTAB_LOCK_JOBS = os.getenv('CRONTAB_LOCK_JOBS') != 'False'
 
 AUTH_USER_MODEL = 'users.User'
 LOGIN_URL = '/admin/login/'
