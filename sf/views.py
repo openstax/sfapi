@@ -34,15 +34,10 @@ def sf_api_usage():
         }
 
 def release_information():
-    if settings.SALESFORCE_USERNAME.contains('.'):
-        salesforce_environment = settings.SALESFORCE_USERNAME.split('.')[1]
-    else:
-        salesforce_environment = 'production'
-
     return {
         'sfapi_version': settings.RELEASE_VERSION,
         'deployment_version': settings.DEPLOYMENT_VERSION,
         'environment': settings.ENVIRONMENT,
         'accounts_environment': settings.ACCOUNTS_URL,
-        'salesforce_environment': salesforce_environment
+        'salesforce_environment': settings.SALESFORCE_ENVIRONMENT
     }

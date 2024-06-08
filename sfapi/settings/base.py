@@ -39,17 +39,16 @@ if LOCAL:
 else:
     DEBUG = False
 
+ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', 'https://accounts.openstax.org')
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
+    # All non-local and non-prod environments
+    ALLOWED_HOSTS = [f"{ENVIRONMENT}.salesforce.openstax.org", f"{ENVIRONMENT}.salesforce.sandbox.openstax.org"]
     if ENVIRONMENT == 'prod':
         # Prod only
         ALLOWED_HOSTS = ['salesforce.openstax.org']
-        ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', 'https://accounts.openstax.org')
-    else:
-        # All non-local and non-prod environments
-        ALLOWED_HOSTS = [f"{ENVIRONMENT}.salesforce.openstax.org", f"{ENVIRONMENT}.salesforce.sandbox.openstax.org"]
-        ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', f"https://{ENVIRONMENT}.accounts.openstax.org")
+
 
 ADMINS = ('SF Admin', 'sfadmin@openstax.org')
 
@@ -138,7 +137,7 @@ DATABASES = {
     }
 }
 
-SALESFORCE_USERNAME = DATABASES['salesforce']['USER']
+SALESFORCE_ENVIRONMENT = DATABASES['salesforce']['HOST'].split('//')[1].split('.')[0]
 SALESFORCE_API_RATE_LIMIT = os.getenv('SALESFORCE_API_RATE_LIMIT', '20/min')  # x/sec x/min x/hour
 SALESFORCE_API_USE_ALERT_THRESHOLD = os.getenv('SALESFORCE_API_USE_ALERT_THRESHOLD', 0.5)  # 50% of the limit
 
