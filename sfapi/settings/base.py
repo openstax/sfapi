@@ -140,6 +140,7 @@ DATABASES = {
 
 # Set Salesforce environment based on the host for /info/
 # username, accounting for email period, then env. if the connecting user has a period in their email, this will fail
+SALESFORCE_ENVIRONMENT = None
 try:
     SALESFORCE_ENVIRONMENT = os.getenv('SALESFORCE_USERNAME', 'user@rice.edu.staging').split('.')[2]
 except IndexError:
