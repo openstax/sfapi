@@ -7,7 +7,7 @@ def update_or_create_contacts(salesforce_contacts):
     :param salesforce_contacts:
     :return created: number of contacts created
     """
-    created = 0
+    created_count = 0
     for contact in salesforce_contacts:
         try:
             account = Account.objects.get(id=contact.account.id)
@@ -37,8 +37,8 @@ def update_or_create_contacts(salesforce_contacts):
             },
         )
         if created:
-            created += 1
-    return created
+            created_count += 1
+    return created_count
 
 
 def update_or_create_accounts(salesforce_accounts):
@@ -47,7 +47,7 @@ def update_or_create_accounts(salesforce_accounts):
     :param salesforce_accounts:
     :return created: number of accounts created
     """
-    created = 0
+    created_count = 0
     for account in salesforce_accounts:
         db_account, created = Account.objects.update_or_create(
             id=account.id,
@@ -70,5 +70,5 @@ def update_or_create_accounts(salesforce_accounts):
             },
         )
         if created:
-            created += 1
-    return created
+            created_count += 1
+    return created_count

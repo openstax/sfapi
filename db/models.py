@@ -54,6 +54,7 @@ class Account(models.Model):
     class Meta:
         verbose_name = 'School'
         verbose_name_plural = 'Schools'
+        get_latest_by = 'last_modified_date'
 
     def __str__(self):
         return self.name
@@ -99,6 +100,7 @@ class Contact(models.Model):
     class Meta:
         verbose_name = 'Contact'
         verbose_name_plural = 'Contacts'
+        get_latest_by = 'last_modified_date'
 
     def __str__(self):
         return self.full_name
@@ -138,6 +140,7 @@ class Opportunity(models.Model):
     class Meta:
         verbose_name = 'Opportunity'
         verbose_name_plural = 'Opportunities'
+        get_latest_by = 'last_modified_date'
 
     def __str__(self):
         return self.name
@@ -193,6 +196,7 @@ class Adoption(models.Model):
     class Meta:
         verbose_name = 'Adoption'
         verbose_name_plural = 'Adoptions'
+        get_latest_by = 'last_modified_date'
 
     def __str__(self):
         return self.name
