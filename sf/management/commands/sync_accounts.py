@@ -11,10 +11,10 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('labels', nargs='*', type=str)
         parser.add_argument('--force', action='store_true', help='Force a full sync of all accounts')
-        parser.add_argument('--force-and-delete', action='store_true', help='Force a full sync of and delete all accounts')
+        parser.add_argument('--forcedelete', action='store_true', help='Force a full sync of and delete all accounts')
 
     def handle(self, *labels, **options):
-        if Account.objects.count() < 100 or options['force'] or options['force-and-delete']:
+        if Account.objects.count() < 100 or options['force'] or options['forcedelete']:
             salesforce_accounts = SFAccount.objects.all()
             self.stdout.write(f"Full sync, fetching all accounts ({salesforce_accounts.count()} total)")
             if options['force-and-delete']:

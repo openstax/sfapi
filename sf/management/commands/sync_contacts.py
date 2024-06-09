@@ -1,4 +1,4 @@
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from sf.models.contact import Contact as SFContact
 from db.models import Contact
 from db.functions import update_or_create_contacts
@@ -9,12 +9,11 @@ class Command(BaseCommand):
     # TODO: this needs to know if a contact was deleted in salesforce and delete it in the local db
 
     def add_arguments(self, parser):
-        parser.add_argument('labels', nargs='*', type=str)
-        parser.add_argument('--force', action='store_true', help='Force a full sync of all contacts')
-        parser.add_argument('--force-and-delete', action='store_true', help='Force a full sync of and delete all contacts')
+        parser.add_argument('--force', action="store_true", help='Force a full sync of all contacts')
+        parser.add_argument('--forcedelete', action="store_true", help='Force a full sync of and delete all contacts')
 
-    def handle(self, *labels, **options):
-        if Contact.objects.count() < 100 or options['force'] or options['force-and-delete']:
+    def handle(self, *args, **options):
+        if Contact.objects.count() < 100 or options['force'] or options['forcedelete']:
             salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False, accounts_uuid__isnull=False)
             self.stdout.write(f"Full sync, fetching all contacts ({salesforce_contacts.count()} total)")
             if options['force-and-delete']:
