@@ -182,7 +182,9 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
     if not contact_adoptions:
         return 404, {'code': 404, 'detail': 'No adoptions found'}
 
-    #  calculate the total students and savings for the adoptions (this could be null :(, so handle that)
+    #  calculate the total students and savings for the adoptions (this could be null, so handle that)
+    # if we know they won't be null, we can use a list comprehension to make this more concise in the response_json
+    # total_students = sum([adoption.students for adoption in contact_adoptions if adoption.students])
     total_students = 0
     total_savings = 0
     for adoption in contact_adoptions:
@@ -201,6 +203,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
     response_json = {
         "count": len(contact_adoptions),
         "contact_id": contact['id'],
+        "first_year_adopting_openstax": contact_adoptions.order_by('base_year').first().base_year if contact_adoptions else None,
         "total_students": total_students,
         "total_savings": total_savings,
         "adoptions": [],

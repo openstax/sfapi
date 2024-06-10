@@ -99,6 +99,7 @@ class AdoptionSchema(Schema):
 class AdoptionsSchema(Schema):
     count: int
     contact_id: str
+    first_year_adopting_openstax: Optional[int]
     total_students: Optional[int]
     total_savings: Optional[float]
     adoptions: List[AdoptionSchema]
