@@ -97,7 +97,8 @@ def get_user_contact(request, expire=False):
                     )
                 except Account.DoesNotExist:
                     pass  # don't block the request if for some reason the account doesn't exist
-                    sentry_sdk.capture_message(f"Account {sf_contact.account.id} does not exist in local database. Contact: {sf_contact.id}")
+                    sentry_sdk.capture_message(f"Account {sf_contact.account.id} does not exist in local database. "
+                                               f"Contact: {sf_contact.id}")
             except SFContact.DoesNotExist:
                 return 404, {'code': 404, 'detail': f'Salesforce: No contact found for user {user_uuid}.'}
             except SFContact.MultipleObjectsReturned:
@@ -127,7 +128,7 @@ def get_user_contact(request, expire=False):
             "accounts_uuid": sf_contact.accounts_uuid,
             "verification_status": sf_contact.verification_status,
             "signup_date": sf_contact.signup_date.strftime('%Y-%m-%d') if sf_contact.signup_date else None,
-            "last_modified_date": sf_contact.signup_date.strftime(
+            "last_modified_date": sf_contact.last_modified_date.strftime(
                 '%Y-%m-%d') if sf_contact.last_modified_date else None,
             "lead_source": sf_contact.lead_source,
         }
@@ -138,21 +139,9 @@ def get_user_contact(request, expire=False):
 ###########
 # Contact #
 ###########
-@router.get("/user", auth=has_auth, response={200: UserSchema, possible_error_codes: ErrorSchema}, tags=["user"])
-def accounts_user(request):
-    try:
-        user_uuid = get_logged_in_user_uuid(request)
-        if user_uuid is None:
-            return 401, {'code': 401, 'detail': 'User is not logged in.'}
-        return {'uuid': user_uuid}
-    except Exception as e:
-        sentry_sdk.capture_exception(e)
-        return 401, {'code': 401, 'detail': f'An error occurred while fetching the user (Accounts Server: {settings.ACCOUNTS_URL}).'}
-
-
 @router.get("/contact", auth=has_auth, response={200: ContactSchema, possible_error_codes: ErrorSchema}, tags=["user"])
 @throttle(SalesforceAPIRateThrottle)
-def user(request, expire: bool = False):
+def salesforce_contact(request, expire: bool = False):
     contact = get_user_contact(request, expire)
     if not contact and not isinstance(contact, dict):
         return 404, {'code': 404, 'detail': f'No contact found.'}
@@ -163,7 +152,7 @@ def user(request, expire: bool = False):
 #############
 @router.get("/adoptions", auth=has_auth, response={200: AdoptionsSchema, possible_error_codes: ErrorSchema}, tags=["user"])
 @throttle(SalesforceAPIRateThrottle)
-def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: bool = False):
+def salesforce_adoptions(request, confirmed: bool = None, assumed: bool = None, expire: bool = False):
     contact = get_user_contact(request, expire)
 
     if not contact or not isinstance(contact, dict):
@@ -241,7 +230,7 @@ def adoptions(request, confirmed: bool = None, assumed: bool = None, expire: boo
 #########
 @router.get("/books", auth=has_super_auth, response={200: BooksSchema, possible_error_codes: ErrorSchema}, tags=["core"])
 @throttle(SalesforceAPIRateThrottle)
-def books(request):
+def salesforce_books(request):
     sf_books = Book.objects.filter(active_book=True)
     if not sf_books:
         return 404, {'code': 404, 'detail': 'No books found.'}
@@ -270,7 +259,7 @@ def books(request):
 ###########
 @router.get("/schools", auth=has_super_auth, response={200: AccountsSchema, possible_error_codes: ErrorSchema}, tags=["core"])
 @throttle(SalesforceAPIRateThrottle)
-def schools(request, name: str = None):
+def salesforce_schools(request, name: str = None):
     if name:
         sf_schools = Account.objects.filter(name__icontains=name)
     else:
@@ -305,7 +294,7 @@ def schools(request, name: str = None):
 
 @router.post("/case", auth=has_super_auth, response={200: CaseSchema, possible_error_codes: ErrorSchema}, tags=["support"])
 @throttle(SalesforceAPIRateThrottle)
-def case(request):
+def salesforce_case(request):
     case = Case.objects.create(
         subject=request.data['subject'],
         description=request.data['description'],
