@@ -90,7 +90,7 @@ class Contact(models.Model):
     verification_status = models.CharField(max_length=255)
     reject_reason = models.CharField(max_length=255, null=True)
     accounts_uuid = models.CharField(max_length=255)
-    accounts_id = models.CharField(max_length=255, help_text='Prioritize using Accounts_UUID__c over this for ox accounts users.')
+    accounts_id = models.CharField(max_length=255, null=True, help_text='Prioritize using Accounts_UUID__c over this for ox accounts users.')
     signup_date = models.DateTimeField(null=True)
     lead_source = models.CharField(max_length=255, null=True)
     lms = models.CharField(max_length=255, null=True)

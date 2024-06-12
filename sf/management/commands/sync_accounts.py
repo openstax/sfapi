@@ -5,7 +5,7 @@ from db.functions import update_or_create_accounts
 from django.utils import timezone
 
 class Command(BaseCommand):
-    help = "sync accounts (schools) with the local database, only fetch accounts that have been modified since the last sync"
+    help = "sync accounts (schools) with the database, only fetch accounts that have been modified since the last sync"
     # TODO: this needs to know if an account was deleted in salesforce and delete it in the local db
 
     def add_arguments(self, parser):

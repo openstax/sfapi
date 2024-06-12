@@ -5,7 +5,7 @@ from db.functions import update_or_create_contacts
 from django.utils import timezone
 
 class Command(BaseCommand):
-    help = "sync contacts with the local database, only fetch contacts that have been modified 1 day prior to the last sync"
+    help = "sync contacts with the database, only fetch contacts that have been modified 1 day prior to the last sync"
     # TODO: this needs to know if a contact was deleted in salesforce and delete it in the local db
 
     def add_arguments(self, parser):
@@ -14,7 +14,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if Contact.objects.count() < 100 or options['force'] or options['forcedelete']:
-            salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False, accounts_uuid__isnull=False)
+            salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False,
+                                                           accounts_uuid__isnull=False)
             self.stdout.write(f"Full sync, fetching all contacts ({salesforce_contacts.count()} total)")
             if options['forcedelete']:
                 Contact.objects.all().delete()
