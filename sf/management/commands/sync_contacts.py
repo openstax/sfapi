@@ -16,7 +16,7 @@ class Command(BaseCommand):
         if Contact.objects.count() < 100 or options['force'] or options['forcedelete']:
             salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False, accounts_uuid__isnull=False)
             self.stdout.write(f"Full sync, fetching all contacts ({salesforce_contacts.count()} total)")
-            if options['force-and-delete']:
+            if options['forcedelete']:
                 Contact.objects.all().delete()
         else:
             last_sync_object = Contact.objects.latest('last_modified_date')

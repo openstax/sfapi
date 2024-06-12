@@ -17,7 +17,7 @@ class Command(BaseCommand):
         if Account.objects.count() < 100 or options['force'] or options['forcedelete']:
             salesforce_accounts = SFAccount.objects.all()
             self.stdout.write(f"Full sync, fetching all accounts ({salesforce_accounts.count()} total)")
-            if options['force-and-delete']:
+            if options['forcedelete']:
                 Account.objects.all().delete()
         else:
             last_sync_object = Account.objects.latest('last_modified_date')
