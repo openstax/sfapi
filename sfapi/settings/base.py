@@ -85,7 +85,7 @@ INSTALLED_APPS = [
 CRONJOBS = [
     ('45 23 * * 6', 'django.core.management.call_command', ['sync_books']),  # sync books every Saturday at 11:45pm
     ('0 5 * * *', 'django.core.management.call_command', ['sync_accounts']),  # sync accounts (schools) every day at 5am
-    ('*/15 6-20 * * *', 'django.core.management.call_command', ['sync_contacts']),  # sync contacts every 15 minutes from 6am-8pm
+    ('0 7-18 * * *', 'django.core.management.call_command', ['sync_contacts']),  # sync contacts every hour from 7am to 6pm
 ]
 
 CRONTAB_COMMAND_PREFIX = os.getenv('CRONTAB_COMMAND_PREFIX', '')
