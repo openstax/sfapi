@@ -21,7 +21,9 @@ class Command(BaseCommand):
                 Contact.objects.all().delete()
         else:
             last_sync_object = Contact.objects.latest('last_modified_date')
-            delta = last_sync_object.last_modified_date - timezone.timedelta(1)
+            # TODO: we only need the delta if we are being more smart about the number of contacts we are fetching
+            # TODO: for example, modify to ignore records updated by B2BMA
+            delta = last_sync_object.last_modified_date  # - timezone.timedelta(1)
             salesforce_contacts = (SFContact.objects.order_by('last_modified_date')
                                    .filter(verification_status__isnull=False,
                                            accounts_uuid__isnull=False,
