@@ -84,8 +84,8 @@ INSTALLED_APPS = [
 # These update the local database with Salesforce data
 CRONJOBS = [
     ('45 23 * * 6', 'django.core.management.call_command', ['sync_books']),  # sync books every Saturday at 11:45pm
-    ('0 5 * * *', 'django.core.management.call_command', ['sync_accounts']),  # sync accounts (schools) every day at 5am
-    ('0 7-18 * * *', 'django.core.management.call_command', ['sync_contacts']),  # sync contacts every hour from 7am to 6pm
+    ('0 5 * * 6', 'django.core.management.call_command', ['sync_accounts']),  # sync accounts (schools) every Saturday at 5am
+    ('0 7 * * *', 'django.core.management.call_command', ['sync_contacts']),  # sync contacts every day at 7am
 ]
 
 CRONTAB_COMMAND_PREFIX = os.getenv('CRONTAB_COMMAND_PREFIX', '')
