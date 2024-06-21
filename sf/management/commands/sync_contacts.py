@@ -16,7 +16,7 @@ class Command(BaseCommand):
         if Contact.objects.count() < 100 or options['force'] or options['forcedelete']:
             salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False,
                                                            accounts_uuid__isnull=False)
-            self.stdout.write(f"Full sync, fetching all contacts ({salesforce_contacts.count()} total)")
+            # self.stdout.write(f"Full sync, fetching all contacts ({salesforce_contacts.count()} total)")
             if options['forcedelete']:
                 Contact.objects.all().delete()
         else:
@@ -29,7 +29,7 @@ class Command(BaseCommand):
                                            accounts_uuid__isnull=False,
                                            last_modified_date__gte=delta)
                                    )
-            self.stdout.write(f"Incremental Sync, fetching {salesforce_contacts.count()}")
+            # self.stdout.write(f"Incremental Sync, fetching {salesforce_contacts.count()}")
         created_count = update_or_create_contacts(salesforce_contacts)
 
         self.stdout.write(self.style.SUCCESS(f"Contacts synced successfully! {created_count} created."))

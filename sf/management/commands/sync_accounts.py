@@ -16,14 +16,14 @@ class Command(BaseCommand):
     def handle(self, *labels, **options):
         if Account.objects.count() < 100 or options['force'] or options['forcedelete']:
             salesforce_accounts = SFAccount.objects.all()
-            self.stdout.write(f"Full sync, fetching all accounts ({salesforce_accounts.count()} total)")
+            # self.stdout.write(f"Full sync, fetching all accounts ({salesforce_accounts.count()} total)")
             if options['forcedelete']:
                 Account.objects.all().delete()
         else:
             last_sync_object = Account.objects.latest('last_modified_date')
             delta = last_sync_object.last_modified_date - timezone.timedelta(1)
             salesforce_accounts = SFAccount.objects.order_by('last_modified_date').filter(last_modified_date__gte=delta)
-            self.stdout.write(f"Incremental Sync, fetching {salesforce_accounts.count()}")
+            # self.stdout.write(f"Incremental Sync, fetching {salesforce_accounts.count()}")
         created_count = update_or_create_accounts(salesforce_accounts)
 
         self.stdout.write(self.style.SUCCESS(f"Accounts synced successfully! {created_count} created."))
