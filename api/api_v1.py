@@ -257,7 +257,7 @@ def salesforce_books(request):
 ###########
 # Schools #
 ###########
-@router.get("/schools", auth=has_super_auth, response={200: AccountsSchema, possible_error_codes: ErrorSchema}, tags=["core"])
+@router.get("/schools", response={200: AccountsSchema, possible_error_codes: ErrorSchema}, tags=["core"])
 @throttle(SalesforceAPIRateThrottle)
 def salesforce_schools(request, name: str = None):
     if name:
