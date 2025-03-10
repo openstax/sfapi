@@ -85,8 +85,15 @@ INSTALLED_APPS = [
 CRONJOBS = [
     ('45 23 * * 6', 'django.core.management.call_command', ['sync_books']),  # sync books every Saturday at 11:45pm
     ('0 5 * * 6', 'django.core.management.call_command', ['sync_accounts']),  # sync accounts (schools) every Saturday at 5am
-    ('0 7 * * *', 'django.core.management.call_command', ['sync_contacts']),  # sync contacts every day at 7am
+    # TODO: optimize before enabling
+    # ('0 7 * * *', 'django.core.management.call_command', ['sync_contacts']),  # sync contacts every day at 7am
 ]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+            r"^https:\/\/.*\.openstax\.org$",
+        ]
+if ENVIRONMENT not in ('local', 'test'):
+    CORS_ALLOW_ALL_ORIGINS = True
 
 CRONTAB_COMMAND_PREFIX = os.getenv('CRONTAB_COMMAND_PREFIX', '')
 CRONTAB_COMMAND_SUFFIX = os.getenv('CRONTAB_COMMAND_SUFFIX', '')
@@ -107,8 +114,6 @@ MIDDLEWARE = [
 ]
 if ENVIRONMENT not in ('local', 'test'):
     MIDDLEWARE.insert(2, 'healthcheck.middleware.HealthCheckMiddleware')  # after session, before common
-
-CORS_ORIGIN_ALLOW_ALL = True
 
 ROOT_URLCONF = 'sfapi.urls'
 

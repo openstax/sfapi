@@ -50,6 +50,8 @@ class Account(models.Model):
     nces_district_id = models.CharField(max_length=50, blank=True, null=True)
     nces_district_id2 = models.CharField(max_length=50, blank=True, null=True)
     nces_id = models.CharField(max_length=255, verbose_name='NCESID', blank=True, null=True)
+    local_create_date = models.DateTimeField(auto_now_add=True, verbose_name='Local Create Date')
+    local_update_date = models.DateTimeField(auto_now=True, verbose_name='Local Update Date')
 
     class Meta:
         verbose_name = 'School'
@@ -67,6 +69,8 @@ class Book(models.Model):
     subject_areas = models.CharField(max_length=255, null=True)
     website_url = models.URLField(max_length=255, null=True)
     active_book = models.BooleanField(default=True)
+    local_create_date = models.DateTimeField(auto_now_add=True, verbose_name='Local Create Date')
+    local_update_date = models.DateTimeField(auto_now=True, verbose_name='Local Update Date')
 
     class Meta:
         verbose_name = 'Book'
@@ -96,6 +100,8 @@ class Contact(models.Model):
     lms = models.CharField(max_length=255, null=True)
     last_modified_date = models.DateTimeField(verbose_name='Last Modified Date', blank=True, null=True)
     subject_interest = models.CharField(max_length=255, verbose_name='Subject Interest', blank=True, null=True)
+    local_create_date = models.DateTimeField(auto_now_add=True, verbose_name='Local Create Date')
+    local_update_date = models.DateTimeField(auto_now=True, verbose_name='Local Update Date')
 
     class Meta:
         verbose_name = 'Contact'
@@ -136,6 +142,8 @@ class Opportunity(models.Model):
     last_viewed_date = models.DateTimeField(blank=True, null=True)
     last_referenced_date = models.DateTimeField(blank=True, null=True)
     book = models.ForeignKey(Book, on_delete=models.PROTECT, max_length=18, blank=True, null=True)
+    local_create_date = models.DateTimeField(auto_now_add=True, verbose_name='Local Create Date')
+    local_update_date = models.DateTimeField(auto_now=True, verbose_name='Local Update Date')
 
     class Meta:
         verbose_name = 'Opportunity'
@@ -192,6 +200,8 @@ class Adoption(models.Model):
         ('For my own knowledge or other work', 'For my own knowledge or other work')
     ], blank=True, null=True)
     savings = models.DecimalField(max_digits=18, decimal_places=2, blank=True, null=True)
+    local_create_date = models.DateTimeField(auto_now_add=True, verbose_name='Local Create Date')
+    local_update_date = models.DateTimeField(auto_now=True, verbose_name='Local Update Date')
 
     class Meta:
         verbose_name = 'Adoption'
