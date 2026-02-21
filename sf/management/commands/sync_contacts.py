@@ -1,36 +1,45 @@
-from django.core.management.base import BaseCommand, CommandError
-from sf.models.contact import Contact as SFContact
-from db.models import Contact
+import datetime
+import time
+
+from django.core.management.base import BaseCommand
+
 from db.functions import update_or_create_contacts
-from django.utils import timezone
+from db.models import Contact
+from sf.models.contact import Contact as SFContact
+
 
 class Command(BaseCommand):
-    help = "sync contacts with the database, only fetch contacts that have been modified 1 day prior to the last sync"
-    # TODO: this needs to know if a contact was deleted in salesforce and delete it in the local db
+    help = "sync contacts with the database, only fetch contacts that have been modified since the last sync"
 
     def add_arguments(self, parser):
-        parser.add_argument('--force', action="store_true", help='Force a full sync of all contacts')
-        parser.add_argument('--forcedelete', action="store_true", help='Force a full sync of and delete all contacts')
+        parser.add_argument("--force", action="store_true", help="Force a full sync of all contacts")
+        parser.add_argument("--forcedelete", action="store_true", help="Force a full sync of and delete all contacts")
 
     def handle(self, *args, **options):
-        if Contact.objects.count() < 100 or options['force'] or options['forcedelete']:
-            salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False,
-                                                           accounts_uuid__isnull=False)
-            # self.stdout.write(f"Full sync, fetching all contacts ({salesforce_contacts.count()} total)")
-            if options['forcedelete']:
-                Contact.objects.all().delete()
+        start_time = time.time()
+
+        full_sync = False
+        if Contact.all_objects.count() < 100 or options["force"] or options["forcedelete"]:
+            salesforce_contacts = SFContact.objects.filter(
+                verification_status__isnull=False, accounts_uuid__isnull=False
+            )
+            full_sync = True
+            self.stdout.write("Full sync, fetching all contacts")
+            if options["forcedelete"]:
+                Contact.all_objects.all().delete()
+                self.stdout.write("Deleted all local contacts")
         else:
-            last_sync_object = Contact.objects.latest('last_modified_date')
-            # TODO: we only need the delta if we are being more smart about the number of contacts we are fetching
-            # TODO: for example, modify to ignore records updated by B2BMA
-            delta = last_sync_object.last_modified_date  # - timezone.timedelta(1)
-            salesforce_contacts = (SFContact.objects.order_by('last_modified_date')
-                                   .filter(verification_status__isnull=False,
-                                           accounts_uuid__isnull=False,
-                                           last_modified_date__gte=delta)
-                                   )
-            # self.stdout.write(f"Incremental Sync, fetching {salesforce_contacts.count()}")
-        created_count = update_or_create_contacts(salesforce_contacts)
+            last_sync_object = Contact.all_objects.latest("last_modified_date")
+            # Use 2-hour lookback buffer to avoid missing records due to clock skew
+            delta = last_sync_object.last_modified_date - datetime.timedelta(hours=2)
+            salesforce_contacts = SFContact.objects.order_by("last_modified_date").filter(
+                verification_status__isnull=False, accounts_uuid__isnull=False, last_modified_date__gte=delta
+            )
+            self.stdout.write(f"Incremental sync from {delta.isoformat()}")
 
-        self.stdout.write(self.style.SUCCESS(f"Contacts synced successfully! {created_count} created."))
+        count = update_or_create_contacts(salesforce_contacts, full_sync=full_sync)
+        duration = time.time() - start_time
 
+        self.stdout.write(
+            self.style.SUCCESS(f"Contacts synced successfully! {count} upserted. Duration: {duration:.1f}s")
+        )

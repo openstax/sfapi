@@ -9,9 +9,32 @@ on:
       - main
 
 jobs:
+    lint:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+              python-version-file: '.python-version'
+
+        - name: Install ruff
+          run: pip install ruff
+
+        - name: Run ruff check
+          run: ruff check .
+
+        - name: Run ruff format check
+          run: ruff format --check .
+
     tests:
         runs-on: ubuntu-latest
         timeout-minutes: 30
+        needs: lint
 
         services:
           postgres:
@@ -23,9 +46,9 @@ jobs:
             ports:
               - 5432:5432
             options: >-
-              --health-cmd pg_isready 
-              --health-interval 10s 
-              --health-timeout 5s 
+              --health-cmd pg_isready
+              --health-interval 10s
+              --health-timeout 5s
               --health-retries 5
           redis:
             image: redis
@@ -56,8 +79,30 @@ jobs:
             SSO_SIGNATURE_PUBLIC_KEY: ${{ secrets.SSO_SIGNATURE_PUBLIC_KEY }}
             SSO_ENCRYPTION_PRIVATE_KEY: ${{ secrets.SSO_ENCRYPTION_PRIVATE_KEY }}
 
+        - name: Check coverage threshold
+          run: coverage report --fail-under=80
+
         - name: Upload coverage reports to Codecov
           uses: codecov/codecov-action@v4.0.1
           with:
             token: ${{ secrets.CODECOV_TOKEN }}
             slug: openstax/sfapi
+
+    security:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+              python-version-file: '.python-version'
+
+        - name: Install dependencies
+          run: pip install -r requirements/base.txt pip-audit
+
+        - name: Run pip-audit
+          run: pip-audit

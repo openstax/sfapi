@@ -1,14 +1,11 @@
+import logging.config
 import os
 import sys
 
 import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
-
-from pathlib import Path
-from dotenv import load_dotenv
-
-import logging.config
 from django.utils.log import DEFAULT_LOGGING
+from dotenv import load_dotenv
+from sentry_sdk.integrations.django import DjangoIntegration
 
 # Load environment variables from .env file
 load_dotenv()
@@ -20,174 +17,192 @@ USE_SFDX_AUTH = False
 # Determine environment based on command line arguments
 # These set various things throughout the settings file like, DEBUG, ALLOWED_HOSTS, CACHE, SENTRY, etc.
 # You can override things in your local.py file to better reflect a production environment
-TEST = 'test' in sys.argv
-LOCAL = 'runserver' in sys.argv or 'runserver_plus' in sys.argv
+TEST = "test" in sys.argv
+LOCAL = "runserver" in sys.argv or "runserver_plus" in sys.argv
 
-ENVIRONMENT = os.getenv('ENVIRONMENT', 'test' if TEST else 'local')
-RELEASE_VERSION = os.getenv('RELEASE_VERSION')
-DEPLOYMENT_VERSION = os.getenv('DEPLOYMENT_VERSION')
-IS_TESTING = os.getenv('IS_TESTING', 'False')
+ENVIRONMENT = os.getenv("ENVIRONMENT", "test" if TEST else "local")
+RELEASE_VERSION = os.getenv("RELEASE_VERSION")
+DEPLOYMENT_VERSION = os.getenv("DEPLOYMENT_VERSION")
+IS_TESTING = os.getenv("IS_TESTING", "").lower() in ("true", "1")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = os.path.join(os.path.dirname(__file__), '..', '..')
+BASE_DIR = os.path.join(os.path.dirname(__file__), "..", "..")
 
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # check if running local dev server - else default to DEBUG=False
 if LOCAL:
     DEBUG = True
 else:
     DEBUG = False
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # Set Accounts URL and environment for /info/
-ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', 'https://accounts.openstax.org')
-ACCOUNTS_ENVIRONMENT = 'production'
-if 'dev' in ACCOUNTS_URL:
-    ACCOUNTS_ENVIRONMENT = 'dev'
-elif 'staging' in ACCOUNTS_URL:
-    ACCOUNTS_ENVIRONMENT = 'staging'
+ACCOUNTS_URL = os.getenv("ACCOUNTS_URL", "https://accounts.openstax.org")
+ACCOUNTS_ENVIRONMENT = "production"
+if "dev" in ACCOUNTS_URL:
+    ACCOUNTS_ENVIRONMENT = "dev"
+elif "staging" in ACCOUNTS_URL:
+    ACCOUNTS_ENVIRONMENT = "staging"
 
 if DEBUG:
-    ALLOWED_HOSTS = ['*']
+    ALLOWED_HOSTS = ["*"]
 else:
     # All non-local and non-prod environments
     ALLOWED_HOSTS = [f"{ENVIRONMENT}.salesforce.openstax.org", f"{ENVIRONMENT}.salesforce.sandbox.openstax.org"]
-    if ENVIRONMENT == 'prod':
+    if ENVIRONMENT == "prod":
         # Prod only
-        ALLOWED_HOSTS = ['salesforce.openstax.org']
+        ALLOWED_HOSTS = ["salesforce.openstax.org"]
 
 
-ADMINS = ('SF Admin', 'sfadmin@openstax.org')
+ADMINS = ("SF Admin", "sfadmin@openstax.org")
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
     # contrib
-    'corsheaders',  # for allowing cross-origin requests
-    'django_crontab',  # for running cron jobs
-    'salesforce',  # to generate models for Salesforce objects
-    'redisboard',  # a django admin page for redis status
-    'ninja',  # the django-ninja api framework
-    'ninja_extra',  # extends ninja with more features
+    "corsheaders",  # for allowing cross-origin requests
+    "django_crontab",  # for running cron jobs
+    "salesforce",  # to generate models for Salesforce objects
+    "redisboard",  # a django admin page for redis status
+    "ninja",  # the django-ninja api framework
+    "ninja_extra",  # extends ninja with more features
     # local apps
-    'db',  # models for the local database storage of Salesforce data (to both cache and store data before upload to SF)
-    'sf',  # logic for interacting with Salesforce
-    'api',  # views and schemas for the API
-    'users',  # custom user model and interactions with OpenStax Accounts
+    "db",  # models for the local database storage of Salesforce data (to both cache and store data before upload to SF)
+    "sf",  # logic for interacting with Salesforce
+    "api",  # views and schemas for the API
+    "users",  # custom user model and interactions with OpenStax Accounts
 ]
 
 # Cron jobs
 # These update the local database with Salesforce data
 CRONJOBS = [
-    ('45 23 * * 6', 'django.core.management.call_command', ['sync_books']),  # sync books every Saturday at 11:45pm
-    ('0 5 * * 6', 'django.core.management.call_command', ['sync_accounts']),  # sync accounts (schools) every Saturday at 5am
-    # TODO: optimize before enabling
-    # ('0 7 * * *', 'django.core.management.call_command', ['sync_contacts']),  # sync contacts every day at 7am
+    ("45 23 * * 6", "django.core.management.call_command", ["sync_books"]),  # sync books every Saturday at 11:45pm
+    (
+        "0 5 * * 6",
+        "django.core.management.call_command",
+        ["sync_accounts"],
+    ),  # sync accounts (schools) every Saturday at 5am
+    (
+        "30 5 * * 6",
+        "django.core.management.call_command",
+        ["sync_opportunities"],
+    ),  # sync opportunities every Saturday at 5:30am (after accounts)
+    (
+        "0 6 * * 6",
+        "django.core.management.call_command",
+        ["sync_adoptions"],
+    ),  # sync adoptions every Saturday at 6am (after opportunities)
+    ("0 7 * * *", "django.core.management.call_command", ["sync_contacts"]),  # sync contacts every day at 7am
+    ("0 3 * * 0", "django.core.management.call_command", ["cleanup_logs"]),  # clean up audit logs every Sunday at 3am
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
-            r"^https:\/\/.*\.openstax\.org$",
-        ]
-if ENVIRONMENT not in ('local', 'test'):
-    CORS_ALLOW_ALL_ORIGINS = True
+    r"^https:\/\/.*\.openstax\.org$",
+]
 
-CRONTAB_COMMAND_PREFIX = os.getenv('CRONTAB_COMMAND_PREFIX', '')
-CRONTAB_COMMAND_SUFFIX = os.getenv('CRONTAB_COMMAND_SUFFIX', '')
-CRONTAB_LOCK_JOBS = os.getenv('CRONTAB_LOCK_JOBS') != 'False'
+CRONTAB_COMMAND_PREFIX = os.getenv("CRONTAB_COMMAND_PREFIX", "")
+CRONTAB_COMMAND_SUFFIX = os.getenv("CRONTAB_COMMAND_SUFFIX", "")
+CRONTAB_LOCK_JOBS = os.getenv("CRONTAB_LOCK_JOBS") != "False"
 
-AUTH_USER_MODEL = 'users.User'
-LOGIN_URL = '/admin/login/'
+AUTH_USER_MODEL = "users.User"
+LOGIN_URL = "/admin/login/"
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "api.middleware.AuditLogMiddleware",
 ]
-if ENVIRONMENT not in ('local', 'test'):
-    MIDDLEWARE.insert(2, 'healthcheck.middleware.HealthCheckMiddleware')  # after session, before common
+if ENVIRONMENT not in ("local", "test"):
+    MIDDLEWARE.insert(2, "healthcheck.middleware.HealthCheckMiddleware")  # after session, before common
 
-ROOT_URLCONF = 'sfapi.urls'
+ROOT_URLCONF = "sfapi.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'sfapi.wsgi.application'
+WSGI_APPLICATION = "sfapi.wsgi.application"
 
 # Database
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DATABASE_NAME', 'sfapi'),
-        'USER': os.getenv('DATABASE_USER', 'postgres'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD', 'postgres'),
-        'HOST': os.getenv('DATABASE_HOST', 'localhost'),
-        'PORT': os.getenv('DATABASE_PORT', '5432'),
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("DATABASE_NAME", "sfapi"),
+        "USER": os.getenv("DATABASE_USER", "postgres"),
+        "PASSWORD": os.getenv("DATABASE_PASSWORD", "postgres"),
+        "HOST": os.getenv("DATABASE_HOST", "localhost"),
+        "PORT": os.getenv("DATABASE_PORT", "5432"),
     },
-    'salesforce': {
-        'ENGINE': 'salesforce.backend',
-        'AUTH': 'salesforce.auth.SalesforcePasswordAuth',
-        'CONSUMER_KEY': os.getenv('SALESFORCE_CLIENT_ID', 'replaceme'),
-        'CONSUMER_SECRET': os.getenv('SALESFORCE_CLIENT_SECRET', 'replaceme'),
-        'USER': os.getenv('SALESFORCE_USERNAME', 'replaceme'),
-        'PASSWORD': os.getenv('SALESFORCE_PASSWORD', 'replaceme') + os.getenv('SALESFORCE_SECURITY_TOKEN', 'replaceme'),
-        'HOST': os.getenv('SALESFORCE_HOST', 'https://test.salesforce.com'),
-    }
+    "salesforce": {
+        "ENGINE": "salesforce.backend",
+        "AUTH": "salesforce.auth.SalesforcePasswordAuth",
+        "CONSUMER_KEY": os.getenv("SALESFORCE_CLIENT_ID", "replaceme"),
+        "CONSUMER_SECRET": os.getenv("SALESFORCE_CLIENT_SECRET", "replaceme"),
+        "USER": os.getenv("SALESFORCE_USERNAME", "replaceme"),
+        "PASSWORD": os.getenv("SALESFORCE_PASSWORD", "replaceme") + os.getenv("SALESFORCE_SECURITY_TOKEN", "replaceme"),
+        "HOST": os.getenv("SALESFORCE_HOST", "https://test.salesforce.com"),
+    },
 }
 
 # Set Salesforce environment based on the host for /info/
 # username, accounting for email period, then env. if the connecting user has a period in their email, this will fail
 SALESFORCE_ENVIRONMENT = None
 try:
-    SALESFORCE_ENVIRONMENT = os.getenv('SALESFORCE_USERNAME', 'user@rice.edu.staging').split('.')[2]
+    SALESFORCE_ENVIRONMENT = os.getenv("SALESFORCE_USERNAME", "user@rice.edu.staging").split(".")[2]
 except IndexError:
-    SALESFORCE_ENVIRONMENT = 'production'
+    SALESFORCE_ENVIRONMENT = "production"
 
 # Salesforce API rate limiting
-SALESFORCE_API_RATE_LIMIT = os.getenv('SALESFORCE_API_RATE_LIMIT', '20/min')  # x/sec x/min x/hour
-SALESFORCE_API_USE_ALERT_THRESHOLD = os.getenv('SALESFORCE_API_USE_ALERT_THRESHOLD', 0.5)  # 50% of the limit
+SALESFORCE_API_RATE_LIMIT = os.getenv("SALESFORCE_API_RATE_LIMIT", "20/min")  # x/sec x/min x/hour
+SALESFORCE_API_USE_ALERT_THRESHOLD = os.getenv("SALESFORCE_API_USE_ALERT_THRESHOLD", 0.5)  # 50% of the limit
 
 # Make sure to have sfdx/sf cli installed, you will be prompted to authenticate if you aren't
 if USE_SFDX_AUTH:
-    DATABASES['salesforce']['AUTH'] = 'salesforce.auth.SfdxOrgWebAuth'
-    DATABASES['salesforce'].pop('CONSUMER_KEY')
-    DATABASES['salesforce'].pop('CONSUMER_SECRET')
-    DATABASES['salesforce'].pop('PASSWORD')
+    DATABASES["salesforce"]["AUTH"] = "salesforce.auth.SfdxOrgWebAuth"
+    DATABASES["salesforce"].pop("CONSUMER_KEY")
+    DATABASES["salesforce"].pop("CONSUMER_SECRET")
+    DATABASES["salesforce"].pop("PASSWORD")
 
-DATABASE_ROUTERS = [
-    "salesforce.router.ModelRouter"
-]
+DATABASE_ROUTERS = ["salesforce.router.ModelRouter"]
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Cache settings
-REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
-REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
-REDIS_PORT = os.getenv('REDIS_PORT', '6379')
-REDIS_DB = os.getenv('REDIS_DB', '0')
-REDIS_PROTOCOL = 'rediss' if REDIS_PASSWORD else 'redis'
-REDIS_URL = f'{REDIS_PROTOCOL}://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = os.getenv("REDIS_PORT", "6379")
+REDIS_DB = os.getenv("REDIS_DB", "0")
+REDIS_PROTOCOL = "rediss" if REDIS_PASSWORD else "redis"
+REDIS_URL = f"{REDIS_PROTOCOL}://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 
 CACHES = {
     "default": {
@@ -199,7 +214,7 @@ CACHES = {
             "IGNORE_EXCEPTIONS": True,  # this works without redis, so don't kill app if redis is down
         },
         "KEY_PREFIX": "sfapi",
-        "TIMEOUT": 60*15  # default to a 15-min cache unless specified
+        "TIMEOUT": 60 * 15,  # default to a 15-min cache unless specified
     }
 }
 
@@ -213,109 +228,117 @@ if LOCAL:
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
 ]
 
 
 # Internationalization
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-STATIC_ROOT = os.path.join(BASE_DIR, 'public', 'static')
-STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "public", "static")
+STATIC_URL = "static/"
 
 # OpenStax SSO cookie settings
-SSO_COOKIE_NAME = os.getenv('SSO_COOKIE_NAME', 'oxa')
-SIGNATURE_PUBLIC_KEY = os.getenv('SSO_SIGNATURE_PUBLIC_KEY')
-ENCRYPTION_PRIVATE_KEY = os.getenv('SSO_ENCRYPTION_PRIVATE_KEY')
+SSO_COOKIE_NAME = os.getenv("SSO_COOKIE_NAME", "oxa")
+SIGNATURE_PUBLIC_KEY = os.getenv("SSO_SIGNATURE_PUBLIC_KEY")
+ENCRYPTION_PRIVATE_KEY = os.getenv("SSO_ENCRYPTION_PRIVATE_KEY")
 
 # This list of uuids use the auth decorator has_super_auth, use this to restrict access to certain endpoints
 # during integrations with other systems
 # TODO: This should be replaced with something like oauth before going to production with these endpoints
-SUPER_USERS = os.getenv('SUPER_USERS', [
-    'f8a6b8b8-32f7-4b4d-b6f9-054ab6fb5623',  # MiVo(local)
-    '92e2c837-2cfa-4c42-bc0f-486d4ef19b2d',  # MiVo
-    '85ea80ef-afdf-40cd-8803-fa84ad5a867e',  # DeMo
-    'c8635454-1e4b-4205-944f-a054aeb9a41c',  # RoJo
-    '1a01d1d7-6551-42ff-9400-23bfeeea4452',  # BrEa
-])
+SUPER_USERS = os.getenv(
+    "SUPER_USERS",
+    [
+        "f8a6b8b8-32f7-4b4d-b6f9-054ab6fb5623",  # MiVo(local)
+        "92e2c837-2cfa-4c42-bc0f-486d4ef19b2d",  # MiVo
+        "85ea80ef-afdf-40cd-8803-fa84ad5a867e",  # DeMo
+        "c8635454-1e4b-4205-944f-a054aeb9a41c",  # RoJo
+        "1a01d1d7-6551-42ff-9400-23bfeeea4452",  # BrEa
+    ],
+)
 
 # Sentry settings
-if ENVIRONMENT not in('local', 'test'):
+if ENVIRONMENT not in ("local", "test"):
     sentry_sdk.init(
-        dsn=os.getenv('SENTRY_DSN'),
+        dsn=os.getenv("SENTRY_DSN"),
         integrations=[DjangoIntegration()],
         traces_sample_rate=0.2,  # 20% of transactions will be sent to sentry
         send_default_pii=True,  # this will send the user id of admin users only to sentry to help with debugging
-        environment=ENVIRONMENT
+        environment=ENVIRONMENT,
     )
 
 
 # Logging
 LOGGING_CONFIG = None
-LOGLEVEL = os.getenv('LOGLEVEL', 'error').upper()
-logging.config.dictConfig({
-    'version': 1,
-    'disable_existing_loggers': False,
-    'filters': {
-        'healthcheck_filter': {
-            '()': 'healthcheck.filter.HealthCheckFilter'
+LOGLEVEL = os.getenv("LOGLEVEL", "error").upper()
+logging.config.dictConfig(
+    {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "filters": {
+            "healthcheck_filter": {"()": "healthcheck.filter.HealthCheckFilter"},
         },
-    },
-    'formatters': {
-        'default': {
-            # exact format is not important, this is the minimum information
-            'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+        "formatters": {
+            "default": {
+                # exact format is not important, this is the minimum information
+                "format": "%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
+            },
+            "django.server": DEFAULT_LOGGING["formatters"]["django.server"],
         },
-        'django.server': DEFAULT_LOGGING['formatters']['django.server'],
-    },
-    'handlers': {
-        # disable logs set with null handler
-        'null': {
-            'class': 'logging.NullHandler',
+        "handlers": {
+            # disable logs set with null handler
+            "null": {
+                "class": "logging.NullHandler",
+            },
+            # console logs to stderr
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "default",
+            },
+            "django.server": {**DEFAULT_LOGGING["handlers"]["django.server"], "filters": ["healthcheck_filter"]},
         },
-        # console logs to stderr
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'default',
+        "loggers": {
+            # default for all undefined Python modules
+            "": {
+                "level": "ERROR",
+                "handlers": ["console"],
+            },
+            # Our application code
+            "openstax": {
+                "level": LOGLEVEL,
+                "handlers": ["console"],
+                "propagate": False,
+            },
+            "django.security.DisallowedHost": {
+                "handlers": ["null"],
+                "propagate": False,
+            },
+            "django.request": {
+                "level": "ERROR",
+                "handlers": ["console"],
+                "propagate": False,
+            },
+            # Default runserver request logging
+            "django.server": DEFAULT_LOGGING["loggers"]["django.server"],
         },
-        'django.server': {
-            **DEFAULT_LOGGING['handlers']['django.server'],
-            'filters': ['healthcheck_filter']
-        },
-    },
-    'loggers': {
-        # default for all undefined Python modules
-        '': {
-            'level': 'ERROR',
-            'handlers': ['console'],
-        },
-        # Our application code
-        'openstax': {
-            'level': LOGLEVEL,
-            'handlers': ['console'],
-            'propagate': False,
-        },
-        'django.security.DisallowedHost': {
-            'handlers': ['null'],
-            'propagate': False,
-        },
-        'django.request': {
-            'level': 'ERROR',
-            'handlers': ['console'],
-            'propagate': False,
-        },
-        # Default runserver request logging
-        'django.server': DEFAULT_LOGGING['loggers']['django.server'],
-    },
-})
+    }
+)
 
 # this is used by the deployment to override settings
 # you can use it locally, but don't check it in

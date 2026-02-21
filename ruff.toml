@@ -1,0 +1,24 @@
+target-version = "py311"
+line-length = 120
+
+[lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "S",   # flake8-bandit (security)
+]
+ignore = [
+    "E501",  # line length (handled by formatter)
+    "S101",  # assert usage (fine in tests)
+    "S105",  # hardcoded password detection (too many false positives in settings)
+    "S106",  # hardcoded password detection
+]
+
+[lint.per-file-ignores]
+"*/tests.py" = ["S"]
+"tests/*" = ["S"]
+"*/migrations/*" = ["E", "W", "F", "I"]
+"sfapi/settings/*" = ["F403", "F405"]  # star imports in settings

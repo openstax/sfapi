@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('db', '0009_alter_account_options_alter_adoption_options_and_more'),
+        ("db", "0009_alter_account_options_alter_adoption_options_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='contact',
-            name='accounts_id',
-            field=models.CharField(help_text='Prioritize using Accounts_UUID__c over this for ox accounts users.', max_length=255, null=True),
+            model_name="contact",
+            name="accounts_id",
+            field=models.CharField(
+                help_text="Prioritize using Accounts_UUID__c over this for ox accounts users.",
+                max_length=255,
+                null=True,
+            ),
         ),
     ]

@@ -4,26 +4,37 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('db', '0008_alter_contact_last_modified_date'),
+        ("db", "0008_alter_contact_last_modified_date"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='account',
-            options={'get_latest_by': 'last_modified_date', 'verbose_name': 'School', 'verbose_name_plural': 'Schools'},
+            name="account",
+            options={"get_latest_by": "last_modified_date", "verbose_name": "School", "verbose_name_plural": "Schools"},
         ),
         migrations.AlterModelOptions(
-            name='adoption',
-            options={'get_latest_by': 'last_modified_date', 'verbose_name': 'Adoption', 'verbose_name_plural': 'Adoptions'},
+            name="adoption",
+            options={
+                "get_latest_by": "last_modified_date",
+                "verbose_name": "Adoption",
+                "verbose_name_plural": "Adoptions",
+            },
         ),
         migrations.AlterModelOptions(
-            name='contact',
-            options={'get_latest_by': 'last_modified_date', 'verbose_name': 'Contact', 'verbose_name_plural': 'Contacts'},
+            name="contact",
+            options={
+                "get_latest_by": "last_modified_date",
+                "verbose_name": "Contact",
+                "verbose_name_plural": "Contacts",
+            },
         ),
         migrations.AlterModelOptions(
-            name='opportunity',
-            options={'get_latest_by': 'last_modified_date', 'verbose_name': 'Opportunity', 'verbose_name_plural': 'Opportunities'},
+            name="opportunity",
+            options={
+                "get_latest_by": "last_modified_date",
+                "verbose_name": "Opportunity",
+                "verbose_name_plural": "Opportunities",
+            },
         ),
     ]

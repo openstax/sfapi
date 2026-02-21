@@ -4,23 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('db', '0003_alter_book_subject_areas_alter_book_website_url'),
+        ("db", "0003_alter_book_subject_areas_alter_book_website_url"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='contact',
-            name='last_activity_date',
+            model_name="contact",
+            name="last_activity_date",
         ),
         migrations.RemoveField(
-            model_name='contact',
-            name='last_modified_by',
+            model_name="contact",
+            name="last_modified_by",
         ),
         migrations.AddField(
-            model_name='contact',
-            name='last_modified_date',
-            field=models.DateField(blank=True, null=True, verbose_name='Last Modified Date'),
+            model_name="contact",
+            name="last_modified_date",
+            field=models.DateField(blank=True, null=True, verbose_name="Last Modified Date"),
         ),
     ]
