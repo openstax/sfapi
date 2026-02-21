@@ -3,6 +3,11 @@ from django.utils import timezone
 from django.test import TestCase
 from sf.models.contact import Contact
 from sf.models.account import Account
+from db.models import Account as DBAccount, Contact as DBContact
+from db.functions import update_or_create_accounts, update_or_create_contacts
+
+import logging
+logging.disable(logging.CRITICAL)
 
 
 class ContactTest(TestCase):
@@ -22,6 +27,7 @@ class ContactTest(TestCase):
         self.assertEqual(contact.last_name, "User")
         self.assertEqual(contact.accounts_uuid, faux_account_id)
 
+
 class AccountTest(TestCase):
     databases = {'default', 'salesforce'}
 
@@ -40,3 +46,69 @@ class AccountTest(TestCase):
         self.assertEqual(account.country, "USA")
 
 
+class BulkSyncTest(TestCase):
+    """Test bulk sync functions."""
+
+    def _make_mock_account(self, id, name='Test School', **kwargs):
+        """Create a mock SF account object."""
+        class MockAccount:
+            pass
+        acct = MockAccount()
+        acct.id = id
+        acct.name = name
+        acct.type = kwargs.get('type', 'College/University (4)')
+        acct.country = kwargs.get('country', 'US')
+        acct.state = kwargs.get('state', 'TX')
+        acct.city = kwargs.get('city', 'Houston')
+        acct.country_code = 'US'
+        acct.state_code = 'TX'
+        acct.created_date = timezone.now()
+        acct.last_modified_date = timezone.now()
+        acct.last_activity_date = None
+        acct.lms = None
+        acct.books_adopted = None
+        acct.sheer_id_school_name = None
+        acct.ipeds_id = None
+        acct.nces_id = None
+        return acct
+
+    def test_bulk_create_accounts(self):
+        accounts = [
+            self._make_mock_account(f'001{i:015d}', f'School {i}')
+            for i in range(10)
+        ]
+        created = update_or_create_accounts(accounts)
+        self.assertEqual(created, 10)
+        self.assertEqual(DBAccount.objects.count(), 10)
+
+    def test_bulk_update_accounts(self):
+        # First create them
+        accounts = [
+            self._make_mock_account(f'001{i:015d}', f'School {i}')
+            for i in range(5)
+        ]
+        update_or_create_accounts(accounts)
+
+        # Now update them
+        for acct in accounts:
+            acct.name = f'Updated {acct.name}'
+        created = update_or_create_accounts(accounts)
+        self.assertEqual(created, 0)
+        self.assertEqual(DBAccount.objects.get(id='001000000000000000').name, 'Updated School 0')
+
+    def test_bulk_mixed_create_update(self):
+        # Create 3 accounts
+        accounts = [
+            self._make_mock_account(f'001{i:015d}', f'School {i}')
+            for i in range(3)
+        ]
+        update_or_create_accounts(accounts)
+
+        # Add 2 new + update 3 existing
+        accounts.extend([
+            self._make_mock_account(f'001{i:015d}', f'School {i}')
+            for i in range(3, 5)
+        ])
+        created = update_or_create_accounts(accounts)
+        self.assertEqual(created, 2)
+        self.assertEqual(DBAccount.objects.count(), 5)

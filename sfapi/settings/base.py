@@ -26,7 +26,7 @@ LOCAL = 'runserver' in sys.argv or 'runserver_plus' in sys.argv
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'test' if TEST else 'local')
 RELEASE_VERSION = os.getenv('RELEASE_VERSION')
 DEPLOYMENT_VERSION = os.getenv('DEPLOYMENT_VERSION')
-IS_TESTING = os.getenv('IS_TESTING', 'False')
+IS_TESTING = os.getenv('IS_TESTING', '').lower() in ('true', '1')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = os.path.join(os.path.dirname(__file__), '..', '..')
@@ -38,6 +38,13 @@ if LOCAL:
     DEBUG = True
 else:
     DEBUG = False
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # Set Accounts URL and environment for /info/
 ACCOUNTS_URL = os.getenv('ACCOUNTS_URL', 'https://accounts.openstax.org')
@@ -85,15 +92,13 @@ INSTALLED_APPS = [
 CRONJOBS = [
     ('45 23 * * 6', 'django.core.management.call_command', ['sync_books']),  # sync books every Saturday at 11:45pm
     ('0 5 * * 6', 'django.core.management.call_command', ['sync_accounts']),  # sync accounts (schools) every Saturday at 5am
-    # TODO: optimize before enabling
-    # ('0 7 * * *', 'django.core.management.call_command', ['sync_contacts']),  # sync contacts every day at 7am
+    ('0 7 * * *', 'django.core.management.call_command', ['sync_contacts']),  # sync contacts every day at 7am
+    ('0 3 * * 0', 'django.core.management.call_command', ['cleanup_logs']),  # clean up audit logs every Sunday at 3am
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
             r"^https:\/\/.*\.openstax\.org$",
         ]
-if ENVIRONMENT not in ('local', 'test'):
-    CORS_ALLOW_ALL_ORIGINS = True
 
 CRONTAB_COMMAND_PREFIX = os.getenv('CRONTAB_COMMAND_PREFIX', '')
 CRONTAB_COMMAND_SUFFIX = os.getenv('CRONTAB_COMMAND_SUFFIX', '')
@@ -111,6 +116,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'api.middleware.AuditLogMiddleware',
 ]
 if ENVIRONMENT not in ('local', 'test'):
     MIDDLEWARE.insert(2, 'healthcheck.middleware.HealthCheckMiddleware')  # after session, before common

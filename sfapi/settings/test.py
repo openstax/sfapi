@@ -26,4 +26,6 @@ CACHES = {
 }
 
 SALESFORCE_DB_ALIAS = 'default'
-IS_TESTING = ENVIRONMENT == 'test'
+
+# Disable production security settings for tests
+SECURE_SSL_REDIRECT = False

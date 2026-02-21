@@ -1,3 +1,4 @@
+import time
 import datetime
 import math
 import sentry_sdk
@@ -11,12 +12,20 @@ from db.models import Book
 from db.models import Account
 from sf.models.case import Case
 from openstax_accounts.functions import get_logged_in_user_uuid
+from .auth import combined_auth, has_scope
+from .models import FormSubmission
+from .forms.pipeline import FormPipeline
+from .forms.processors import process_submission
 from .schemas import \
     ErrorSchema, \
     AdoptionsSchema, \
     ContactSchema, \
+    ContactUpdateSchema, \
     BooksSchema, \
     CaseSchema, \
+    CaseCreateSchema, \
+    FormSubmissionSchema, \
+    FormSubmissionResponseSchema, \
     UserSchema
 
 from .schemas import AccountsSchema
@@ -44,12 +53,8 @@ possible_error_codes = frozenset([401, 404, 422])
 class SalesforceAPIRateThrottle(UserRateThrottle):
     rate = settings.SALESFORCE_API_RATE_LIMIT
 
-# Authentication decorator to check if the user is authenticated with OpenStax Accounts
+# Legacy auth functions kept for /info/ endpoint (sf/views.py)
 def has_auth(request):
-    # TODO: fix this, mock something for tests
-    # If testing, return True to bypass the authentication check
-    if settings.IS_TESTING:
-        return True
     return get_logged_in_user_uuid(request) is not None
 
 def has_super_auth(request):
@@ -61,7 +66,7 @@ def calculate_cache_expire(duration):
 
 def get_user_contact(request, expire=False):
     user_uuid = get_logged_in_user_uuid(request)
-    if user_uuid is None and not settings.IS_TESTING:
+    if user_uuid is None:
         return 401, {'code': 401, 'detail': 'User is not logged in.'}
 
     try:
@@ -139,18 +144,18 @@ def get_user_contact(request, expire=False):
 ###########
 # Contact #
 ###########
-@router.get("/contact", auth=has_auth, response={200: ContactSchema, possible_error_codes: ErrorSchema}, tags=["user"])
+@router.get("/contact", auth=combined_auth, response={200: ContactSchema, possible_error_codes: ErrorSchema}, tags=["user"])
 @throttle(SalesforceAPIRateThrottle)
 def salesforce_contact(request, expire: bool = False):
     contact = get_user_contact(request, expire)
-    if not contact and not isinstance(contact, dict):
-        return 404, {'code': 404, 'detail': f'No contact found.'}
+    if not contact or not isinstance(contact, dict):
+        return 404, {'code': 404, 'detail': 'No contact found.'}
     return contact
 
 #############
 # Adoptions #
 #############
-@router.get("/adoptions", auth=has_auth, response={200: AdoptionsSchema, possible_error_codes: ErrorSchema}, tags=["user"])
+@router.get("/adoptions", auth=combined_auth, response={200: AdoptionsSchema, possible_error_codes: ErrorSchema}, tags=["user"])
 @throttle(SalesforceAPIRateThrottle)
 def salesforce_adoptions(request, confirmed: bool = None, assumed: bool = None, expire: bool = False):
     contact = get_user_contact(request, expire)
@@ -162,7 +167,9 @@ def salesforce_adoptions(request, confirmed: bool = None, assumed: bool = None, 
     if contact_adoptions is not None:
         return contact_adoptions
 
-    contact_adoptions = Adoption.objects.filter(contact__id=contact['id'])
+    contact_adoptions = Adoption.objects.select_related(
+        'opportunity__book', 'opportunity__account'
+    ).filter(contact__id=contact['id'])
     if confirmed:
         contact_adoptions = contact_adoptions.filter(confirmation_type='OpenStax Confirmed Adoption')
     if assumed:
@@ -228,9 +235,11 @@ def salesforce_adoptions(request, confirmed: bool = None, assumed: bool = None, 
 #########
 # Books #
 #########
-@router.get("/books", auth=has_super_auth, response={200: BooksSchema, possible_error_codes: ErrorSchema}, tags=["core"])
+@router.get("/books", auth=combined_auth, response={200: BooksSchema, possible_error_codes: ErrorSchema}, tags=["core"])
 @throttle(SalesforceAPIRateThrottle)
 def salesforce_books(request):
+    if not has_scope(request, 'read:books'):
+        return 401, {'code': 401, 'detail': 'Insufficient permissions. Required scope: read:books'}
     sf_books = Book.objects.filter(active_book=True)
     if not sf_books:
         return 404, {'code': 404, 'detail': 'No books found.'}
@@ -260,13 +269,13 @@ def salesforce_books(request):
 @router.get("/schools", response={200: AccountsSchema, possible_error_codes: ErrorSchema}, tags=["core"])
 @throttle(SalesforceAPIRateThrottle)
 def salesforce_schools(request, name: str = None):
-    if name:
-        sf_schools = Account.objects.filter(name__icontains=name)
-    else:
+    if not name:
         return 422, {'code': 422, 'detail': 'You must provide a name or city to search by.'}
 
     if len(name) < 3:
         return 422, {'code': 422, 'detail': 'The query must be at least 3 characters long.'}
+
+    sf_schools = Account.objects.filter(name__icontains=name)
 
     if not sf_schools:
         return 404, {'code': 404, 'detail': 'No schools found.'}
@@ -292,17 +301,105 @@ def salesforce_schools(request, name: str = None):
         })
     return response_json
 
-@router.post("/case", auth=has_super_auth, response={200: CaseSchema, possible_error_codes: ErrorSchema}, tags=["support"])
+@router.post("/case", auth=combined_auth, response={200: CaseSchema, possible_error_codes: ErrorSchema}, tags=["support"])
 @throttle(SalesforceAPIRateThrottle)
-def salesforce_case(request):
+def salesforce_case(request, payload: CaseCreateSchema):
+    if not has_scope(request, 'write:cases'):
+        return 401, {'code': 401, 'detail': 'Insufficient permissions. Required scope: write:cases'}
     case = Case.objects.create(
-        subject=request.data['subject'],
-        description=request.data['description'],
-        product=request.data['product'],
-        feature=request.data['feature'],
-        issue=request.data['issue'],
+        subject=payload.subject,
+        description=payload.description,
+        product=payload.product,
+        feature=payload.feature,
+        issue=payload.issue,
     )
     return case
+
+
+######################
+# Contact (Update)  #
+######################
+@router.put("/contact", auth=combined_auth, response={200: ContactSchema, possible_error_codes: ErrorSchema}, tags=["user"])
+@throttle(SalesforceAPIRateThrottle)
+def update_contact(request, payload: ContactUpdateSchema):
+    user_uuid = get_logged_in_user_uuid(request)
+    if user_uuid is None:
+        return 401, {'code': 401, 'detail': 'User is not logged in.'}
+
+    try:
+        contact = Contact.objects.get(accounts_uuid=user_uuid)
+    except Contact.DoesNotExist:
+        return 404, {'code': 404, 'detail': 'No contact found.'}
+
+    # Only update fields that were provided
+    update_fields = []
+    for field_name, value in payload.dict(exclude_unset=True).items():
+        if value is not None:
+            setattr(contact, field_name, value)
+            update_fields.append(field_name)
+
+    if update_fields:
+        # Update full_name if first or last name changed
+        if 'first_name' in update_fields or 'last_name' in update_fields:
+            contact.full_name = f"{contact.first_name} {contact.last_name}"
+            update_fields.append('full_name')
+        contact._change_source = 'api'
+        contact._changed_by = user_uuid
+        contact.save()
+
+    return get_user_contact(request)
+
+
+#################
+# Form Gateway #
+#################
+form_pipeline = FormPipeline()
+
+@router.post("/forms/submit", auth=combined_auth, response={200: FormSubmissionResponseSchema, 202: FormSubmissionResponseSchema, possible_error_codes: ErrorSchema}, tags=["forms"])
+def submit_form(request, payload: FormSubmissionSchema):
+    request_time = time.time()
+    is_valid, errors = form_pipeline.validate(payload, request_time)
+
+    # Get auth info for the submission record
+    auth_type = getattr(request, 'auth_type', '')
+    auth_identifier = ''
+    if auth_type == 'sso':
+        auth_identifier = getattr(request, 'auth_uuid', '')
+    elif auth_type == 'api_key':
+        auth_identifier = getattr(request, 'auth_key_name', '')
+
+    ip_address = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip() or request.META.get('REMOTE_ADDR')
+
+    if not is_valid and 'spam' in errors:
+        # Silent discard — return 202 so bots don't know they were detected
+        submission = FormSubmission.objects.create(
+            form_type=payload.form_type,
+            data=payload.data,
+            source_url=payload.source_url or '',
+            status='spam',
+            auth_type=auth_type,
+            auth_identifier=auth_identifier,
+            ip_address=ip_address,
+        )
+        return 202, {'id': str(submission.id), 'form_type': submission.form_type, 'status': 'pending'}
+
+    if not is_valid:
+        return 422, {'code': 422, 'detail': '; '.join(errors)}
+
+    submission = FormSubmission.objects.create(
+        form_type=payload.form_type,
+        data=payload.data,
+        source_url=payload.source_url or '',
+        status='pending',
+        auth_type=auth_type,
+        auth_identifier=auth_identifier,
+        ip_address=ip_address,
+    )
+
+    # Process synchronously for now
+    process_submission(submission)
+
+    return {'id': str(submission.id), 'form_type': submission.form_type, 'status': submission.status}
 
 
 # Add the endpoints to the API

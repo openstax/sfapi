@@ -1,5 +1,6 @@
 import datetime
-from typing import List, Optional
+import re
+from typing import Dict, List, Optional
 from ninja import Field, Schema, FilterSchema
 
 # The schema for the response of endpoints are here
@@ -110,9 +111,54 @@ class AdoptionsSchema(Schema):
 # Cases #
 #########
 
+class CaseCreateSchema(Schema):
+    subject: str = Field(min_length=1, max_length=255, description="The subject/title of the case.")
+    description: str = Field(min_length=1, max_length=10000, description="Detailed description of the case.")
+    product: Optional[str] = Field(None, max_length=255)
+    feature: Optional[str] = Field(None, max_length=255)
+    issue: Optional[str] = Field(None, max_length=255)
+
 class CaseSchema(Schema):
     subject: str
     description: str
     product: Optional[str]
     feature: Optional[str]
     issue: Optional[str]
+
+
+##################
+# Write Schemas #
+##################
+
+class ContactUpdateSchema(Schema):
+    first_name: Optional[str] = Field(None, max_length=255)
+    last_name: Optional[str] = Field(None, max_length=255)
+    role: Optional[str] = Field(None, max_length=255)
+    subject_interest: Optional[str] = Field(None, max_length=255)
+    lms: Optional[str] = Field(None, max_length=255)
+
+
+class AdoptionCreateSchema(Schema):
+    book_id: str = Field(max_length=18, description="Salesforce ID of the book.")
+    school_year: str = Field(pattern=r'^\d{4}-\d{4}$', description="School year in YYYY-YYYY format.")
+    students: int = Field(ge=0, description="Number of students using this book.")
+    how_using: Optional[str] = Field(None, max_length=255)
+    terms_used: Optional[str] = Field(None, max_length=255)
+
+
+#################
+# Form Schemas #
+#################
+
+class FormSubmissionSchema(Schema):
+    form_type: str = Field(max_length=50, description="Type of form being submitted.")
+    data: Dict = Field(description="Form data as key-value pairs.")
+    source_url: Optional[str] = Field(None, max_length=2048)
+    honeypot: Optional[str] = Field(None, max_length=255, description="Hidden field for bot detection.")
+    submitted_at: Optional[float] = Field(None, description="JS timestamp when form was loaded.")
+
+
+class FormSubmissionResponseSchema(Schema):
+    id: str
+    form_type: str
+    status: str

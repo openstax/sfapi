@@ -1,2 +1,5 @@
 -r dev.txt
 coverage
+factory_boy
+ruff
+pip-audit

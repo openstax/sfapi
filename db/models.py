@@ -1,6 +1,7 @@
 from django.db import models
+from .tracking import ChangeTrackingMixin
 
-class Account(models.Model):
+class Account(ChangeTrackingMixin, models.Model):
     id = models.CharField(max_length=18, primary_key=True)
     name = models.CharField(max_length=255, verbose_name='Account Name')
     type = models.CharField(max_length=255, verbose_name='Account Type',
@@ -50,6 +51,7 @@ class Account(models.Model):
     nces_district_id = models.CharField(max_length=50, blank=True, null=True)
     nces_district_id2 = models.CharField(max_length=50, blank=True, null=True)
     nces_id = models.CharField(max_length=255, verbose_name='NCESID', blank=True, null=True)
+    is_deleted = models.BooleanField(default=False)
     local_create_date = models.DateTimeField(auto_now_add=True, verbose_name='Local Create Date')
     local_update_date = models.DateTimeField(auto_now=True, verbose_name='Local Update Date')
 
@@ -57,6 +59,10 @@ class Account(models.Model):
         verbose_name = 'School'
         verbose_name_plural = 'Schools'
         get_latest_by = 'last_modified_date'
+        indexes = [
+            models.Index(fields=['name'], name='idx_account_name'),
+            models.Index(fields=['last_modified_date'], name='idx_account_last_mod'),
+        ]
 
     def __str__(self):
         return self.name
@@ -69,6 +75,7 @@ class Book(models.Model):
     subject_areas = models.CharField(max_length=255, null=True)
     website_url = models.URLField(max_length=255, null=True)
     active_book = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False)
     local_create_date = models.DateTimeField(auto_now_add=True, verbose_name='Local Create Date')
     local_update_date = models.DateTimeField(auto_now=True, verbose_name='Local Update Date')
 
@@ -79,7 +86,7 @@ class Book(models.Model):
     def __str__(self):
         return self.official_name
 
-class Contact(models.Model):
+class Contact(ChangeTrackingMixin, models.Model):
     id = models.CharField(max_length=18, primary_key=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
@@ -100,6 +107,7 @@ class Contact(models.Model):
     lms = models.CharField(max_length=255, null=True)
     last_modified_date = models.DateTimeField(verbose_name='Last Modified Date', blank=True, null=True)
     subject_interest = models.CharField(max_length=255, verbose_name='Subject Interest', blank=True, null=True)
+    is_deleted = models.BooleanField(default=False)
     local_create_date = models.DateTimeField(auto_now_add=True, verbose_name='Local Create Date')
     local_update_date = models.DateTimeField(auto_now=True, verbose_name='Local Update Date')
 
@@ -107,12 +115,18 @@ class Contact(models.Model):
         verbose_name = 'Contact'
         verbose_name_plural = 'Contacts'
         get_latest_by = 'last_modified_date'
+        indexes = [
+            models.Index(fields=['accounts_uuid'], name='idx_contact_uuid'),
+            models.Index(fields=['accounts_id'], name='idx_contact_accounts_id'),
+            models.Index(fields=['email'], name='idx_contact_email'),
+            models.Index(fields=['last_modified_date'], name='idx_contact_last_mod'),
+        ]
 
     def __str__(self):
         return self.full_name
 
 
-class Opportunity(models.Model):
+class Opportunity(ChangeTrackingMixin, models.Model):
     id = models.CharField(max_length=18, primary_key=True)
     account = models.ForeignKey(Account, on_delete=models.PROTECT, max_length=18, verbose_name='Account ID', blank=True, null=True)
     record_type_id = models.CharField(max_length=18, verbose_name='Record Type ID', blank=True, null=True)
@@ -149,6 +163,11 @@ class Opportunity(models.Model):
         verbose_name = 'Opportunity'
         verbose_name_plural = 'Opportunities'
         get_latest_by = 'last_modified_date'
+        indexes = [
+            models.Index(fields=['contact'], name='idx_opp_contact'),
+            models.Index(fields=['book'], name='idx_opp_book'),
+            models.Index(fields=['account'], name='idx_opp_account'),
+        ]
 
     def __str__(self):
         return self.name
@@ -157,16 +176,16 @@ class Opportunity(models.Model):
 # A user will have many adoptions, but they represent a single book for a single school year
 # The adoption is nested under the opportunity, which is nested under the contact
 
-class Adoption(models.Model):
+class Adoption(ChangeTrackingMixin, models.Model):
     id = models.CharField(max_length=18, primary_key=True)
-    contact = models.ForeignKey(Contact, on_delete=models.DO_NOTHING)
+    contact = models.ForeignKey(Contact, on_delete=models.CASCADE)
     adoption_number = models.CharField(max_length=80)
     created_date = models.DateTimeField()
     last_modified_date = models.DateTimeField()
     system_modstamp = models.DateTimeField()
     last_activity_date = models.DateField(blank=True, null=True)
     class_start_date = models.DateField(blank=True, null=True)
-    opportunity = models.ForeignKey(Opportunity, on_delete=models.DO_NOTHING, max_length=18)
+    opportunity = models.ForeignKey(Opportunity, on_delete=models.CASCADE, max_length=18)
     confirmation_date = models.DateField(blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     base_year = models.DecimalField(max_digits=4, decimal_places=0, blank=True, null=True)
@@ -207,6 +226,9 @@ class Adoption(models.Model):
         verbose_name = 'Adoption'
         verbose_name_plural = 'Adoptions'
         get_latest_by = 'last_modified_date'
+        indexes = [
+            models.Index(fields=['contact'], name='idx_adoption_contact'),
+        ]
 
     def __str__(self):
         return self.name
