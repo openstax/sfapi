@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import RequestLog, FieldChangeLog, APIKey, FormSubmission
+
+from .models import APIKey, FieldChangeLog, FormSubmission, RequestLog
 
 
 @admin.register(RequestLog)

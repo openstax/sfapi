@@ -1,7 +1,7 @@
 from django.test import TestCase
-from django.utils import timezone
-from api.models import RequestLog, FieldChangeLog
-from db.models import Account, Contact
+
+from api.models import FieldChangeLog, RequestLog
+from db.models import Account
 
 
 class RequestLogTest(TestCase):

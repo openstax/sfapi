@@ -1,6 +1,7 @@
 import factory
 from django.utils import timezone
-from db.models import Account, Book, Contact, Opportunity, Adoption
+
+from db.models import Account, Adoption, Book, Contact, Opportunity
 
 
 class AccountFactory(factory.django.DjangoModelFactory):

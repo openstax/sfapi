@@ -1,14 +1,11 @@
+import logging.config
 import os
 import sys
 
 import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
-
-from pathlib import Path
-from dotenv import load_dotenv
-
-import logging.config
 from django.utils.log import DEFAULT_LOGGING
+from dotenv import load_dotenv
+from sentry_sdk.integrations.django import DjangoIntegration
 
 # Load environment variables from .env file
 load_dotenv()

@@ -1,12 +1,14 @@
-import uuid
-from django.utils import timezone
-from django.test import TestCase
-from sf.models.contact import Contact
-from sf.models.account import Account
-from db.models import Account as DBAccount, Contact as DBContact
-from db.functions import update_or_create_accounts, update_or_create_contacts
-
 import logging
+import uuid
+
+from django.test import TestCase
+from django.utils import timezone
+
+from db.functions import update_or_create_accounts
+from db.models import Account as DBAccount
+from sf.models.account import Account
+from sf.models.contact import Contact
+
 logging.disable(logging.CRITICAL)
 
 

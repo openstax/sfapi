@@ -1,6 +1,5 @@
 import time
 
-
 # Minimum time (in seconds) between form load and submission — submissions faster than this are likely bots
 MIN_SUBMISSION_TIME = 3
 

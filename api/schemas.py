@@ -1,7 +1,7 @@
 import datetime
-import re
 from typing import Dict, List, Optional
-from ninja import Field, Schema, FilterSchema
+
+from ninja import Field, FilterSchema, Schema
 
 # The schema for the response of endpoints are here
 # The fields set here will be for validation (if creating), serialization, and /api/docs

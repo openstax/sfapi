@@ -1,5 +1,7 @@
 import logging
+
 from django.utils import timezone
+
 from sf.models.case import Case
 
 logger = logging.getLogger('openstax')

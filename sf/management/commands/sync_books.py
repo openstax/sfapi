@@ -1,7 +1,9 @@
 import time
+
 from django.core.management.base import BaseCommand
-from sf.models.book import Book as SFBook
+
 from db.functions import update_or_create_books
+from sf.models.book import Book as SFBook
 
 
 class Command(BaseCommand):

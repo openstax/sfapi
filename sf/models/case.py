@@ -1,5 +1,6 @@
 from salesforce import models
 
+
 class Case(models.SalesforceModel):
     subject = models.CharField(db_column='Subject', max_length=255, verbose_name='Subject')
     description = models.TextField(db_column='Description', verbose_name='Description')

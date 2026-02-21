@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from .models import Book, Account, Contact, Opportunity, Adoption
+from .models import Account, Adoption, Book, Contact, Opportunity
+
 
 class AccountAdmin(admin.ModelAdmin):
     list_display = ("name", "type", "is_deleted")

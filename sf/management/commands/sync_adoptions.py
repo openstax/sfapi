@@ -1,9 +1,11 @@
 import datetime
 import time
+
 from django.core.management.base import BaseCommand
-from sf.models.adoption import Adoption as SFAdoption
-from db.models import Adoption
+
 from db.functions import update_or_create_adoptions
+from db.models import Adoption
+from sf.models.adoption import Adoption as SFAdoption
 
 
 class Command(BaseCommand):

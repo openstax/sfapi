@@ -1,8 +1,10 @@
 import logging
+
 from django.core.cache import cache
 from django.db import transaction
-from .models import Contact, Account, Book, Opportunity, Adoption
 from sentry_sdk import capture_exception
+
+from .models import Account, Adoption, Book, Contact, Opportunity
 
 logger = logging.getLogger('openstax')
 

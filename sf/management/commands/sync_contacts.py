@@ -1,9 +1,11 @@
 import datetime
 import time
+
 from django.core.management.base import BaseCommand
-from sf.models.contact import Contact as SFContact
-from db.models import Contact
+
 from db.functions import update_or_create_contacts
+from db.models import Contact
+from sf.models.contact import Contact as SFContact
 
 
 class Command(BaseCommand):

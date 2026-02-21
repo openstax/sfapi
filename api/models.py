@@ -1,4 +1,5 @@
 import uuid
+
 from django.db import models
 
 from .auth import APIKey  # noqa: F401 — re-export so Django finds it

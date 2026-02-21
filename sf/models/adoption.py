@@ -1,4 +1,5 @@
 from salesforce import models
+
 from .contact import Contact
 from .opportunity import Opportunity
 

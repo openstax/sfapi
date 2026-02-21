@@ -1,9 +1,11 @@
 import datetime
 import time
+
 from django.core.management.base import BaseCommand
-from sf.models.opportunity import Opportunity as SFOpportunity
-from db.models import Opportunity
+
 from db.functions import update_or_create_opportunities
+from db.models import Opportunity
+from sf.models.opportunity import Opportunity as SFOpportunity
 
 
 class Command(BaseCommand):

@@ -1,4 +1,5 @@
 import time
+
 from django.utils.deprecation import MiddlewareMixin
 
 
@@ -31,7 +32,7 @@ class AuditLogMiddleware(MiddlewareMixin):
                 ip_address=self._get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', '')[:512],
             )
-        except Exception:
+        except Exception:  # noqa: S110
             pass  # Never let audit logging break the response
 
         return response

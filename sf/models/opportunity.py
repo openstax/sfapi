@@ -1,7 +1,9 @@
 from salesforce import models
-from .book import Book
+
 from .account import Account
+from .book import Book
 from .contact import Contact
+
 
 class Opportunity(models.SalesforceModel):
     account = models.ForeignKey(Account, on_delete=models.DO_NOTHING, sf_read_only=models.READ_ONLY, db_column='AccountId', max_length=18, verbose_name='Account ID', blank=True, null=True)  # References to missing tables: ['-Account']

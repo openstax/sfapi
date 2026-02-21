@@ -1,7 +1,8 @@
-from sentry_sdk import capture_message
-from django.http import JsonResponse
-from django.db import connections
 from django.conf import settings
+from django.db import connections
+from django.http import JsonResponse
+from sentry_sdk import capture_message
+
 from api.api_v1 import has_super_auth
 
 

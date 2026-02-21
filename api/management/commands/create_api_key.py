@@ -1,6 +1,8 @@
+from datetime import timedelta
+
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from datetime import timedelta
+
 from api.auth import APIKey
 
 
@@ -27,7 +29,7 @@ class Command(BaseCommand):
             created_by=options['created_by'],
         )
 
-        self.stdout.write(self.style.SUCCESS(f'API key created successfully:'))
+        self.stdout.write(self.style.SUCCESS('API key created successfully:'))
         self.stdout.write(f'  Name:    {api_key.name}')
         self.stdout.write(f'  Prefix:  {api_key.key_prefix}...')
         self.stdout.write(f'  Scopes:  {", ".join(api_key.scopes)}')

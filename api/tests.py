@@ -1,15 +1,18 @@
-import uuid
-import time
-from unittest.mock import patch, MagicMock
-from django.utils import timezone
-from django.test import TestCase
-from ninja.testing import TestClient
-from db.models import Contact, Account, Book, Opportunity, Adoption
-from api.auth import APIKey
-from .api_v1 import router
-
 # Disable logging to prevent unnecessary output during tests
 import logging
+import time
+import uuid
+from unittest.mock import patch
+
+from django.test import TestCase
+from django.utils import timezone
+from ninja.testing import TestClient
+
+from api.auth import APIKey
+from db.models import Account, Adoption, Book, Contact, Opportunity
+
+from .api_v1 import router
+
 logging.disable(logging.CRITICAL)
 
 # Test UUID for mocking authenticated requests

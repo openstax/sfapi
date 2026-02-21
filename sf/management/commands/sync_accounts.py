@@ -1,9 +1,11 @@
 import datetime
 import time
+
 from django.core.management.base import BaseCommand
-from sf.models.account import Account as SFAccount
-from db.models import Account
+
 from db.functions import update_or_create_accounts
+from db.models import Account
+from sf.models.account import Account as SFAccount
 
 
 class Command(BaseCommand):

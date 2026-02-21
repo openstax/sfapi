@@ -1,34 +1,35 @@
-import time
 import datetime
 import math
+import time
+
 import sentry_sdk
-from django.utils import timezone
 from django.conf import settings
 from django.core.cache import cache
-from db.models import Contact, Book, Account, Adoption
-from sf.models.contact import Contact as SFContact
-from sf.models.case import Case
+from django.utils import timezone
+from ninja_extra import NinjaExtraAPI, Router, throttle
+from ninja_extra.throttling import UserRateThrottle
 from openstax_accounts.functions import get_logged_in_user_uuid
+
+from db.models import Account, Adoption, Book, Contact
+from sf.models.case import Case
+from sf.models.contact import Contact as SFContact
+
 from .auth import combined_auth, has_scope
-from .models import FormSubmission
 from .forms.pipeline import FormPipeline
 from .forms.processors import process_submission
-from .schemas import \
-    ErrorSchema, \
-    AdoptionsSchema, \
-    ContactSchema, \
-    ContactUpdateSchema, \
-    BooksSchema, \
-    CaseSchema, \
-    CaseCreateSchema, \
-    FormSubmissionSchema, \
-    FormSubmissionResponseSchema, \
-    UserSchema
-
-from .schemas import AccountsSchema
-
-from ninja_extra import NinjaExtraAPI, throttle, Router
-from ninja_extra.throttling import UserRateThrottle
+from .models import FormSubmission
+from .schemas import (
+    AccountsSchema,
+    AdoptionsSchema,
+    BooksSchema,
+    CaseCreateSchema,
+    CaseSchema,
+    ContactSchema,
+    ContactUpdateSchema,
+    ErrorSchema,
+    FormSubmissionResponseSchema,
+    FormSubmissionSchema,
+)
 
 # Cache durations in seconds, calculated with math.prod() to use them in the api
 # A reasonable format is to use math.prod([seconds, minutes, hours, days]) to calculate the duration

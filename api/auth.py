@@ -1,5 +1,6 @@
 import hashlib
 import secrets
+
 from django.db import models
 from django.utils import timezone
 from ninja.security import APIKeyCookie, HttpBearer

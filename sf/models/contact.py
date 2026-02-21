@@ -1,6 +1,8 @@
 from salesforce import models
-from salesforce.models import SalesforceModel, READ_ONLY, NOT_CREATEABLE, DO_NOTHING, DEFAULTED_ON_CREATE
+from salesforce.models import READ_ONLY, SalesforceModel
+
 from .account import Account
+
 
 class Contact(SalesforceModel):
     first_name = models.CharField(max_length=255, db_column='FirstName')
