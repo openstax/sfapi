@@ -109,8 +109,9 @@ class ContactEndpointTest(TestCase):
             signup_date=timezone.now(),
         )
 
+    @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
-    def test_get_contact_success(self, mock_auth):
+    def test_get_contact_success(self, mock_v1, mock_auth):
         response = self.client.get("/contact")
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -118,13 +119,15 @@ class ContactEndpointTest(TestCase):
         self.assertEqual(data["first_name"], "Test")
         self.assertEqual(data["school"], "Test University")
 
+    @patch("api.auth.get_logged_in_user_uuid", return_value=str(uuid.uuid4()))
     @patch("api.api_v1.get_logged_in_user_uuid", return_value=str(uuid.uuid4()))
-    def test_get_contact_not_found(self, mock_auth):
+    def test_get_contact_not_found(self, mock_v1, mock_auth):
         response = self.client.get("/contact")
         self.assertEqual(response.status_code, 404)
 
+    @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
-    def test_update_contact(self, mock_auth):
+    def test_update_contact(self, mock_v1, mock_auth):
         response = self.client.put(
             "/contact",
             json={
@@ -192,8 +195,9 @@ class AdoptionsEndpointTest(TestCase):
             savings=5000,
         )
 
+    @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
-    def test_get_adoptions_success(self, mock_auth):
+    def test_get_adoptions_success(self, mock_v1, mock_auth):
         response = self.client.get("/adoptions")
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -201,13 +205,15 @@ class AdoptionsEndpointTest(TestCase):
         self.assertEqual(data["total_students"], 50)
         self.assertEqual(data["adoptions"][0]["school_year"], "2024-2025")
 
+    @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
-    def test_get_adoptions_confirmed_filter(self, mock_auth):
+    def test_get_adoptions_confirmed_filter(self, mock_v1, mock_auth):
         response = self.client.get("/adoptions?confirmed=true")
         self.assertEqual(response.status_code, 200)
 
+    @patch("api.auth.get_logged_in_user_uuid", return_value=str(uuid.uuid4()))
     @patch("api.api_v1.get_logged_in_user_uuid", return_value=str(uuid.uuid4()))
-    def test_get_adoptions_no_contact(self, mock_auth):
+    def test_get_adoptions_no_contact(self, mock_v1, mock_auth):
         response = self.client.get("/adoptions")
         self.assertEqual(response.status_code, 404)
 
@@ -247,14 +253,16 @@ class BooksEndpointTest(TestCase):
         self.client = TestClient(router)
         Book.objects.create(id="a0B000000000001", name="Physics", official_name="College Physics", type="Textbook")
 
+    @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_super_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_super_user)
-    def test_get_books_with_scope(self, mock_auth):
+    def test_get_books_with_scope(self, mock_v1, mock_auth):
         response = self.client.get("/books")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 1)
 
+    @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
-    def test_get_books_without_scope(self, mock_auth):
+    def test_get_books_without_scope(self, mock_v1, mock_auth):
         response = self.client.get("/books")
         self.assertEqual(response.status_code, 401)
 
@@ -265,8 +273,9 @@ class FormSubmissionTest(TestCase):
     def setUp(self):
         self.client = TestClient(router)
 
+    @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
-    def test_honeypot_returns_202(self, mock_auth):
+    def test_honeypot_returns_202(self, mock_v1, mock_auth):
         response = self.client.post(
             "/forms/submit",
             json={
@@ -277,8 +286,9 @@ class FormSubmissionTest(TestCase):
         )
         self.assertEqual(response.status_code, 202)
 
+    @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
-    def test_fast_submission_returns_202(self, mock_auth):
+    def test_fast_submission_returns_202(self, mock_v1, mock_auth):
         # submitted_at is only 1 second ago (JS timestamp)
         response = self.client.post(
             "/forms/submit",
@@ -290,8 +300,9 @@ class FormSubmissionTest(TestCase):
         )
         self.assertEqual(response.status_code, 202)
 
+    @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_logged_in_user)
-    def test_valid_submission(self, mock_auth):
+    def test_valid_submission(self, mock_v1, mock_auth):
         response = self.client.post(
             "/forms/submit",
             json={
@@ -311,8 +322,9 @@ class CaseValidationTest(TestCase):
     def setUp(self):
         self.client = TestClient(router)
 
+    @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_super_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_super_user)
-    def test_case_missing_subject(self, mock_auth):
+    def test_case_missing_subject(self, mock_v1, mock_auth):
         response = self.client.post(
             "/case",
             json={
@@ -321,8 +333,9 @@ class CaseValidationTest(TestCase):
         )
         self.assertEqual(response.status_code, 422)
 
+    @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_super_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_super_user)
-    def test_case_empty_subject(self, mock_auth):
+    def test_case_empty_subject(self, mock_v1, mock_auth):
         response = self.client.post(
             "/case",
             json={
