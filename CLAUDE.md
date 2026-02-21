@@ -28,7 +28,7 @@ python manage.py migrate
 # Sync Salesforce data to local DB
 python manage.py sync_accounts        # schools/institutions
 python manage.py sync_books           # textbooks
-python manage.py sync_contacts        # user contacts (currently disabled in cron)
+python manage.py sync_contacts        # user contacts
 python manage.py sync_accounts --force       # force full sync
 python manage.py sync_accounts --forcedelete # reset and resync
 ```

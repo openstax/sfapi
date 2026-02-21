@@ -44,7 +44,8 @@ class APIKey(models.Model):
 
     def verify(self, raw_key):
         """Verify a raw key against this key's hash."""
-        return hashlib.sha256(raw_key.encode()).hexdigest() == self.key_hash
+        computed_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        return secrets.compare_digest(computed_hash, self.key_hash)
 
     @property
     def is_expired(self):

@@ -15,7 +15,7 @@ CONTACT_SYNC_FIELDS = [
     'first_name', 'last_name', 'full_name', 'email', 'role', 'position',
     'title', 'account', 'adoption_status', 'verification_status',
     'accounts_uuid', 'accounts_id', 'signup_date', 'lead_source', 'lms',
-    'last_modified_date',
+    'last_modified_date', 'subject_interest',
 ]
 
 
@@ -98,6 +98,7 @@ def update_or_create_contacts(salesforce_contacts):
             lead_source=contact.lead_source,
             lms=contact.lms,
             last_modified_date=contact.last_modified_date,
+            subject_interest=contact.subject_interest,
         )
         if contact.id in existing_ids:
             to_update.append(db_contact)
