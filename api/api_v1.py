@@ -166,7 +166,12 @@ def get_user_contact(request, expire=False):
 )
 @throttle(SalesforceAPIRateThrottle)
 def salesforce_contact(request, expire: bool = False):
-    contact = get_user_contact(request, expire)
+    result = get_user_contact(request, expire)
+    # If get_user_contact returned a (status_code, payload) tuple, propagate it directly.
+    if isinstance(result, tuple) and len(result) == 2:
+        return result
+
+    contact = result
     if not contact or not isinstance(contact, dict):
         return 404, {"code": 404, "detail": "No contact found."}
     return contact

@@ -9,8 +9,18 @@ from openstax_accounts.functions import get_logged_in_user_uuid
 
 class APIKey(models.Model):
     name = models.CharField(max_length=100, help_text="Human-readable name for this key.")
-    key_prefix = models.CharField(max_length=8, help_text="First 8 chars of the key for identification.")
-    key_hash = models.CharField(max_length=64, help_text="SHA-256 hash of the full key.")
+    key_prefix = models.CharField(
+        max_length=8,
+        unique=True,
+        db_index=True,
+        help_text="First 8 chars of the key for identification.",
+    )
+    key_hash = models.CharField(
+        max_length=64,
+        unique=True,
+        db_index=True,
+        help_text="SHA-256 hash of the full key.",
+    )
     scopes = models.JSONField(default=list, help_text="List of permission scopes, e.g. ['read:books', 'write:cases'].")
     is_active = models.BooleanField(default=True)
     expires_at = models.DateTimeField(null=True, blank=True)
