@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import RequestLog, FieldChangeLog, APIKey
+from .models import RequestLog, FieldChangeLog, APIKey, FormSubmission
 
 
 @admin.register(RequestLog)
@@ -44,3 +44,21 @@ class APIKeyAdmin(admin.ModelAdmin):
     list_filter = ('is_active',)
     search_fields = ('name', 'key_prefix')
     readonly_fields = ('key_prefix', 'key_hash', 'created_at', 'last_used_at')
+
+
+@admin.register(FormSubmission)
+class FormSubmissionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'form_type', 'status', 'auth_type', 'created_at', 'processed_at')
+    list_filter = ('form_type', 'status', 'auth_type')
+    search_fields = ('id', 'form_type', 'auth_identifier')
+    readonly_fields = [f.name for f in FormSubmission._meta.fields]
+    ordering = ('-created_at',)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

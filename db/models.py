@@ -1,6 +1,12 @@
 from django.db import models
 from .tracking import ChangeTrackingMixin
 
+
+class ActiveManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+
 class Account(ChangeTrackingMixin, models.Model):
     id = models.CharField(max_length=18, primary_key=True)
     name = models.CharField(max_length=255, verbose_name='Account Name')
@@ -55,6 +61,9 @@ class Account(ChangeTrackingMixin, models.Model):
     local_create_date = models.DateTimeField(auto_now_add=True, verbose_name='Local Create Date')
     local_update_date = models.DateTimeField(auto_now=True, verbose_name='Local Update Date')
 
+    objects = ActiveManager()
+    all_objects = models.Manager()
+
     class Meta:
         verbose_name = 'School'
         verbose_name_plural = 'Schools'
@@ -67,7 +76,7 @@ class Account(ChangeTrackingMixin, models.Model):
     def __str__(self):
         return self.name
 
-class Book(models.Model):
+class Book(ChangeTrackingMixin, models.Model):
     id = models.CharField(max_length=18, primary_key=True)
     name = models.CharField(max_length=255)
     official_name = models.CharField(max_length=255)
@@ -78,6 +87,9 @@ class Book(models.Model):
     is_deleted = models.BooleanField(default=False)
     local_create_date = models.DateTimeField(auto_now_add=True, verbose_name='Local Create Date')
     local_update_date = models.DateTimeField(auto_now=True, verbose_name='Local Update Date')
+
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = 'Book'
@@ -110,6 +122,9 @@ class Contact(ChangeTrackingMixin, models.Model):
     is_deleted = models.BooleanField(default=False)
     local_create_date = models.DateTimeField(auto_now_add=True, verbose_name='Local Create Date')
     local_update_date = models.DateTimeField(auto_now=True, verbose_name='Local Update Date')
+
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         verbose_name = 'Contact'

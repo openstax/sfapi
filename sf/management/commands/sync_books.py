@@ -1,8 +1,7 @@
 import time
 from django.core.management.base import BaseCommand
-from django.db import transaction
 from sf.models.book import Book as SFBook
-from db.models import Book
+from db.functions import update_or_create_books
 
 
 class Command(BaseCommand):
@@ -12,35 +11,9 @@ class Command(BaseCommand):
         start_time = time.time()
 
         salesforce_books = SFBook.objects.all()
-        existing_ids = set(Book.objects.values_list('id', flat=True))
-        to_create = []
-        to_update = []
-
-        for book in salesforce_books:
-            db_book = Book(
-                id=book.id,
-                name=book.name,
-                official_name=book.official_name,
-                type=book.type,
-                subject_areas=book.subject_areas,
-                website_url=book.website_url,
-            )
-            if book.id in existing_ids:
-                to_update.append(db_book)
-            else:
-                to_create.append(db_book)
-
-        with transaction.atomic():
-            if to_create:
-                Book.objects.bulk_create(to_create, batch_size=500)
-            if to_update:
-                Book.objects.bulk_update(
-                    to_update,
-                    fields=['name', 'official_name', 'type', 'subject_areas', 'website_url'],
-                    batch_size=500,
-                )
+        count = update_or_create_books(salesforce_books, full_sync=True)
 
         duration = time.time() - start_time
         self.stdout.write(self.style.SUCCESS(
-            f"Books synced successfully! {len(to_create)} created, {len(to_update)} updated. Duration: {duration:.1f}s"
+            f"Books synced successfully! {count} upserted. Duration: {duration:.1f}s"
         ))

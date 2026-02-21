@@ -5,11 +5,8 @@ import sentry_sdk
 from django.utils import timezone
 from django.conf import settings
 from django.core.cache import cache
-from sf.models.adoption import Adoption
-from db.models import Contact
+from db.models import Contact, Book, Account, Adoption
 from sf.models.contact import Contact as SFContact
-from db.models import Book
-from db.models import Account
 from sf.models.case import Case
 from openstax_accounts.functions import get_logged_in_user_uuid
 from .auth import combined_auth, has_scope
@@ -35,10 +32,9 @@ from ninja_extra.throttling import UserRateThrottle
 
 # Cache durations in seconds, calculated with math.prod() to use them in the api
 # A reasonable format is to use math.prod([seconds, minutes, hours, days]) to calculate the duration
-# CONTACT_CACHE_DURATION = math.prod([60, 60, 24, 7])  # 1 week
+CONTACT_CACHE_DURATION = math.prod([60, 15])  # 15 minutes
 ADOPTIONS_CACHE_DURATION = math.prod([60, 60])  # 1 hour
-# BOOK_CACHE_DURATION = math.prod([60, 60, 24, 14])  # 2 weeks
-# ACCOUNT_CACHE_DURATION = math.prod([60, 60, 24, 14])  # 2 weeks
+SCHOOL_COUNT_CACHE_DURATION = math.prod([60, 60, 24])  # 24 hours
 
 api = NinjaExtraAPI(
     version="1.0.0",  # Do not exceed 1.x.x in this file, create api_v2.py for new versions; NO breaking changes!
@@ -69,9 +65,16 @@ def get_user_contact(request, expire=False):
     if user_uuid is None:
         return 401, {'code': 401, 'detail': 'User is not logged in.'}
 
+    # Check cache first (unless expire=True to force refresh)
+    cache_key = f"sfapi:contact:{user_uuid}"
+    if not expire:
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
     try:
         try:
-            sf_contact = Contact.objects.get(accounts_uuid=user_uuid)
+            sf_contact = Contact.objects.select_related('account').get(accounts_uuid=user_uuid)
         except Contact.DoesNotExist:
             try:
                 sf_contact = SFContact.objects.get(accounts_uuid=user_uuid)
@@ -114,7 +117,7 @@ def get_user_contact(request, expire=False):
         sentry_sdk.capture_message(f'User {user_uuid} does not have a valid Salesforce Contact.')
         return 404, {'code': 404, 'detail': f'User {user_uuid} does not have a valid Contact.'}
     except Contact.MultipleObjectsReturned:
-        sf_contact = Contact.objects.filter(accounts_id=user_uuid).latest('last_modified_date')
+        sf_contact = Contact.objects.select_related('account').filter(accounts_id=user_uuid).latest('last_modified_date')
         sentry_sdk.capture_message(
             f"User {user_uuid} has multiple Salesforce Contacts. Returning the last modified ({sf_contact.id}).")
 
@@ -138,6 +141,7 @@ def get_user_contact(request, expire=False):
             "lead_source": sf_contact.lead_source,
         }
 
+        cache.set(cache_key, contact, CONTACT_CACHE_DURATION)
         return contact
 
 # API endpoints, responses are defined in schemas.py
@@ -280,11 +284,16 @@ def salesforce_schools(request, name: str = None):
     if not sf_schools:
         return 404, {'code': 404, 'detail': 'No schools found.'}
 
+    total_count = cache.get("sfapi:school_count")
+    if total_count is None:
+        total_count = Account.objects.count()
+        cache.set("sfapi:school_count", total_count, SCHOOL_COUNT_CACHE_DURATION)
+
     # build the json for the cache, this keeps the database away from Salesforce on future requests
     # you must update this if you change the AccountsSchema or anything it depends on!
     response_json = {
         "count": len(sf_schools),
-        "total_schools": Account.objects.count(),
+        "total_schools": total_count,
         "schools": [],
     }
 
@@ -347,6 +356,8 @@ def update_contact(request, payload: ContactUpdateSchema):
         contact._changed_by = user_uuid
         contact.save()
 
+    # Invalidate cached contact after update
+    cache.delete(f"sfapi:contact:{user_uuid}")
     return get_user_contact(request)
 
 

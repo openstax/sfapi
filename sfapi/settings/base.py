@@ -92,6 +92,8 @@ INSTALLED_APPS = [
 CRONJOBS = [
     ('45 23 * * 6', 'django.core.management.call_command', ['sync_books']),  # sync books every Saturday at 11:45pm
     ('0 5 * * 6', 'django.core.management.call_command', ['sync_accounts']),  # sync accounts (schools) every Saturday at 5am
+    ('30 5 * * 6', 'django.core.management.call_command', ['sync_opportunities']),  # sync opportunities every Saturday at 5:30am (after accounts)
+    ('0 6 * * 6', 'django.core.management.call_command', ['sync_adoptions']),  # sync adoptions every Saturday at 6am (after opportunities)
     ('0 7 * * *', 'django.core.management.call_command', ['sync_contacts']),  # sync contacts every day at 7am
     ('0 3 * * 0', 'django.core.management.call_command', ['cleanup_logs']),  # clean up audit logs every Sunday at 3am
 ]

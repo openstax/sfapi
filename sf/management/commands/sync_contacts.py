@@ -16,15 +16,17 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         start_time = time.time()
 
-        if Contact.objects.count() < 100 or options['force'] or options['forcedelete']:
+        full_sync = False
+        if Contact.all_objects.count() < 100 or options['force'] or options['forcedelete']:
             salesforce_contacts = SFContact.objects.filter(verification_status__isnull=False,
                                                            accounts_uuid__isnull=False)
-            self.stdout.write(f"Full sync, fetching all contacts")
+            full_sync = True
+            self.stdout.write("Full sync, fetching all contacts")
             if options['forcedelete']:
-                Contact.objects.all().delete()
+                Contact.all_objects.all().delete()
                 self.stdout.write("Deleted all local contacts")
         else:
-            last_sync_object = Contact.objects.latest('last_modified_date')
+            last_sync_object = Contact.all_objects.latest('last_modified_date')
             # Use 2-hour lookback buffer to avoid missing records due to clock skew
             delta = last_sync_object.last_modified_date - datetime.timedelta(hours=2)
             salesforce_contacts = (SFContact.objects.order_by('last_modified_date')
@@ -34,9 +36,9 @@ class Command(BaseCommand):
                                    )
             self.stdout.write(f"Incremental sync from {delta.isoformat()}")
 
-        created_count = update_or_create_contacts(salesforce_contacts)
+        count = update_or_create_contacts(salesforce_contacts, full_sync=full_sync)
         duration = time.time() - start_time
 
         self.stdout.write(self.style.SUCCESS(
-            f"Contacts synced successfully! {created_count} created. Duration: {duration:.1f}s"
+            f"Contacts synced successfully! {count} upserted. Duration: {duration:.1f}s"
         ))

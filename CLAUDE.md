@@ -29,7 +29,9 @@ python manage.py migrate
 python manage.py sync_accounts        # schools/institutions
 python manage.py sync_books           # textbooks
 python manage.py sync_contacts        # user contacts
-python manage.py sync_accounts --force       # force full sync
+python manage.py sync_opportunities   # opportunities
+python manage.py sync_adoptions       # adoptions
+python manage.py sync_accounts --force       # force full sync (marks missing records as soft-deleted)
 python manage.py sync_accounts --forcedelete # reset and resync
 ```
 
@@ -54,9 +56,11 @@ python manage.py sync_accounts --forcedelete # reset and resync
 4. **Adoptions** are cached in Redis (1 hour) with key pattern `sfapi:adoptions{confirmed}:{assumed}:{contact_id}`
 
 ### Authentication
-- `has_auth`: Checks OpenStax Accounts SSO cookie via `get_logged_in_user_uuid()`
-- `has_super_auth`: Restricts to hardcoded UUID list in `settings.SUPER_USERS` (books, cases endpoints)
-- In test mode (`IS_TESTING=True`), auth is bypassed
+- `combined_auth` (`api/auth.py`): Accepts either SSO cookie or API key (Bearer token). Used on all authenticated endpoints.
+  - `SSOAuth`: Validates OpenStax Accounts SSO cookie via `get_logged_in_user_uuid()`
+  - `ServiceAuth`: Validates API keys (model `APIKey` with hashed keys + scoped permissions)
+- `has_scope(request, scope)`: Checks if the authenticated request has a specific permission scope (e.g., `read:books`, `write:cases`)
+- Legacy `has_auth`/`has_super_auth` kept only for the `/info/` endpoint in `sf/views.py`
 
 ### Environment Detection
 Settings auto-detect environment from CLI args: `test` in argv → test mode, `runserver` in argv → local mode. The `ENVIRONMENT` env var controls deployed environments (dev, staging, prod). Local mode uses dummy cache (no Redis needed).

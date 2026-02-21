@@ -77,8 +77,8 @@ class BulkSyncTest(TestCase):
             self._make_mock_account(f'001{i:015d}', f'School {i}')
             for i in range(10)
         ]
-        created = update_or_create_accounts(accounts)
-        self.assertEqual(created, 10)
+        count = update_or_create_accounts(accounts)
+        self.assertEqual(count, 10)
         self.assertEqual(DBAccount.objects.count(), 10)
 
     def test_bulk_update_accounts(self):
@@ -89,11 +89,11 @@ class BulkSyncTest(TestCase):
         ]
         update_or_create_accounts(accounts)
 
-        # Now update them
+        # Now update them (upsert returns total count, not just created)
         for acct in accounts:
             acct.name = f'Updated {acct.name}'
-        created = update_or_create_accounts(accounts)
-        self.assertEqual(created, 0)
+        count = update_or_create_accounts(accounts)
+        self.assertEqual(count, 5)
         self.assertEqual(DBAccount.objects.get(id='001000000000000000').name, 'Updated School 0')
 
     def test_bulk_mixed_create_update(self):
@@ -104,11 +104,11 @@ class BulkSyncTest(TestCase):
         ]
         update_or_create_accounts(accounts)
 
-        # Add 2 new + update 3 existing
+        # Add 2 new + update 3 existing (upsert returns total count)
         accounts.extend([
             self._make_mock_account(f'001{i:015d}', f'School {i}')
             for i in range(3, 5)
         ])
-        created = update_or_create_accounts(accounts)
-        self.assertEqual(created, 2)
+        count = update_or_create_accounts(accounts)
+        self.assertEqual(count, 5)
         self.assertEqual(DBAccount.objects.count(), 5)
