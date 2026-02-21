@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('db', '0005_alter_contact_adoption_status_and_more'),
+        ("db", "0005_alter_contact_adoption_status_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='opportunity',
-            name='name',
+            model_name="opportunity",
+            name="name",
             field=models.CharField(max_length=255),
         ),
     ]

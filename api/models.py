@@ -18,12 +18,12 @@ class RequestLog(models.Model):
     user_agent = models.CharField(max_length=512, blank=True)
 
     class Meta:
-        verbose_name = 'Request Log'
-        verbose_name_plural = 'Request Logs'
-        ordering = ['-timestamp']
+        verbose_name = "Request Log"
+        verbose_name_plural = "Request Logs"
+        ordering = ["-timestamp"]
         indexes = [
-            models.Index(fields=['path'], name='idx_reqlog_path'),
-            models.Index(fields=['auth_type'], name='idx_reqlog_auth_type'),
+            models.Index(fields=["path"], name="idx_reqlog_path"),
+            models.Index(fields=["auth_type"], name="idx_reqlog_auth_type"),
         ]
 
     def __str__(self):
@@ -39,17 +39,17 @@ class FieldChangeLog(models.Model):
     new_value = models.TextField(null=True, blank=True)
     change_source = models.CharField(
         max_length=20,
-        choices=[('api', 'API'), ('sync', 'Sync'), ('admin', 'Admin')],
-        default='api',
+        choices=[("api", "API"), ("sync", "Sync"), ("admin", "Admin")],
+        default="api",
     )
     changed_by = models.CharField(max_length=255, blank=True)
 
     class Meta:
-        verbose_name = 'Field Change Log'
-        verbose_name_plural = 'Field Change Logs'
-        ordering = ['-timestamp']
+        verbose_name = "Field Change Log"
+        verbose_name_plural = "Field Change Logs"
+        ordering = ["-timestamp"]
         indexes = [
-            models.Index(fields=['model_name', 'record_id'], name='idx_changelog_model_record'),
+            models.Index(fields=["model_name", "record_id"], name="idx_changelog_model_record"),
         ]
 
     def __str__(self):
@@ -58,18 +58,18 @@ class FieldChangeLog(models.Model):
 
 class FormSubmission(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('processing', 'Processing'),
-        ('completed', 'Completed'),
-        ('failed', 'Failed'),
-        ('spam', 'Spam'),
+        ("pending", "Pending"),
+        ("processing", "Processing"),
+        ("completed", "Completed"),
+        ("failed", "Failed"),
+        ("spam", "Spam"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     form_type = models.CharField(max_length=50)
     data = models.JSONField()
     source_url = models.CharField(max_length=2048, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     sf_record_id = models.CharField(max_length=18, blank=True)
     error_message = models.TextField(blank=True)
     auth_type = models.CharField(max_length=20, blank=True)
@@ -79,9 +79,9 @@ class FormSubmission(models.Model):
     processed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        verbose_name = 'Form Submission'
-        verbose_name_plural = 'Form Submissions'
-        ordering = ['-created_at']
+        verbose_name = "Form Submission"
+        verbose_name_plural = "Form Submissions"
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.form_type} ({self.status}) - {self.id}"

@@ -4,35 +4,34 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('db', '0001_initial'),
+        ("db", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='account',
-            name='id',
+            model_name="account",
+            name="id",
             field=models.CharField(max_length=18, primary_key=True, serialize=False),
         ),
         migrations.AlterField(
-            model_name='adoption',
-            name='id',
+            model_name="adoption",
+            name="id",
             field=models.CharField(max_length=18, primary_key=True, serialize=False),
         ),
         migrations.AlterField(
-            model_name='book',
-            name='id',
+            model_name="book",
+            name="id",
             field=models.CharField(max_length=18, primary_key=True, serialize=False),
         ),
         migrations.AlterField(
-            model_name='contact',
-            name='id',
+            model_name="contact",
+            name="id",
             field=models.CharField(max_length=18, primary_key=True, serialize=False),
         ),
         migrations.AlterField(
-            model_name='opportunity',
-            name='id',
+            model_name="opportunity",
+            name="id",
             field=models.CharField(max_length=18, primary_key=True, serialize=False),
         ),
     ]

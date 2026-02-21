@@ -7,15 +7,15 @@ class ChangeTrackingMixin(models.Model):
     # Fields to track — override in subclass if needed
     _tracked_fields = None
     # Default change source — can be overridden per-save via _change_source attribute
-    _change_source = 'api'
-    _changed_by = ''
+    _change_source = "api"
+    _changed_by = ""
 
     class Meta:
         abstract = True
 
     def save(self, *args, **kwargs):
-        change_source = getattr(self, '_change_source', 'api')
-        changed_by = getattr(self, '_changed_by', '')
+        change_source = getattr(self, "_change_source", "api")
+        changed_by = getattr(self, "_changed_by", "")
 
         if self.pk:
             try:
@@ -32,7 +32,7 @@ class ChangeTrackingMixin(models.Model):
         if self._tracked_fields is not None:
             return self._tracked_fields
         # Default: track all concrete fields except auto-managed ones
-        skip = {'local_create_date', 'local_update_date', 'id'}
+        skip = {"local_create_date", "local_update_date", "id"}
         return [f.name for f in self._meta.concrete_fields if f.name not in skip]
 
     def _get_changes(self, old_instance):
@@ -41,12 +41,18 @@ class ChangeTrackingMixin(models.Model):
             old_val = getattr(old_instance, field_name)
             new_val = getattr(self, field_name)
             if old_val != new_val:
-                changes.append((field_name, str(old_val) if old_val is not None else None,
-                                str(new_val) if new_val is not None else None))
+                changes.append(
+                    (
+                        field_name,
+                        str(old_val) if old_val is not None else None,
+                        str(new_val) if new_val is not None else None,
+                    )
+                )
         return changes
 
     def _log_changes(self, changes, change_source, changed_by):
         from api.models import FieldChangeLog
+
         logs = [
             FieldChangeLog(
                 model_name=type(self).__name__,

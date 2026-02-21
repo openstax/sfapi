@@ -16,6 +16,4 @@ class Command(BaseCommand):
         count = update_or_create_books(salesforce_books, full_sync=True)
 
         duration = time.time() - start_time
-        self.stdout.write(self.style.SUCCESS(
-            f"Books synced successfully! {count} upserted. Duration: {duration:.1f}s"
-        ))
+        self.stdout.write(self.style.SUCCESS(f"Books synced successfully! {count} upserted. Duration: {duration:.1f}s"))

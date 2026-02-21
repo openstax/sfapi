@@ -7,21 +7,25 @@ from api.models import FieldChangeLog, RequestLog
 
 
 class Command(BaseCommand):
-    help = 'Clean up old audit logs. Prunes request logs older than 90 days and field change logs older than 1 year.'
+    help = "Clean up old audit logs. Prunes request logs older than 90 days and field change logs older than 1 year."
 
     def add_arguments(self, parser):
-        parser.add_argument('--request-days', type=int, default=90, help='Delete request logs older than N days (default: 90)')
-        parser.add_argument('--change-days', type=int, default=365, help='Delete field change logs older than N days (default: 365)')
-        parser.add_argument('--dry-run', action='store_true', help='Show what would be deleted without deleting')
+        parser.add_argument(
+            "--request-days", type=int, default=90, help="Delete request logs older than N days (default: 90)"
+        )
+        parser.add_argument(
+            "--change-days", type=int, default=365, help="Delete field change logs older than N days (default: 365)"
+        )
+        parser.add_argument("--dry-run", action="store_true", help="Show what would be deleted without deleting")
 
     def handle(self, *args, **options):
-        request_cutoff = timezone.now() - timedelta(days=options['request_days'])
-        change_cutoff = timezone.now() - timedelta(days=options['change_days'])
+        request_cutoff = timezone.now() - timedelta(days=options["request_days"])
+        change_cutoff = timezone.now() - timedelta(days=options["change_days"])
 
         request_count = RequestLog.objects.filter(timestamp__lt=request_cutoff).count()
         change_count = FieldChangeLog.objects.filter(timestamp__lt=change_cutoff).count()
 
-        if options['dry_run']:
+        if options["dry_run"]:
             self.stdout.write(f"Would delete {request_count} request logs older than {options['request_days']} days")
             self.stdout.write(f"Would delete {change_count} field change logs older than {options['change_days']} days")
             return
@@ -31,6 +35,6 @@ class Command(BaseCommand):
         if change_count:
             FieldChangeLog.objects.filter(timestamp__lt=change_cutoff).delete()
 
-        self.stdout.write(self.style.SUCCESS(
-            f"Cleaned up {request_count} request logs and {change_count} field change logs"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(f"Cleaned up {request_count} request logs and {change_count} field change logs")
+        )

@@ -5,11 +5,11 @@ from .models import APIKey, FieldChangeLog, FormSubmission, RequestLog
 
 @admin.register(RequestLog)
 class RequestLogAdmin(admin.ModelAdmin):
-    list_display = ('timestamp', 'method', 'path', 'status_code', 'auth_type', 'duration_ms')
-    list_filter = ('method', 'status_code', 'auth_type')
-    search_fields = ('path', 'auth_identifier')
+    list_display = ("timestamp", "method", "path", "status_code", "auth_type", "duration_ms")
+    list_filter = ("method", "status_code", "auth_type")
+    search_fields = ("path", "auth_identifier")
     readonly_fields = [f.name for f in RequestLog._meta.fields]
-    ordering = ('-timestamp',)
+    ordering = ("-timestamp",)
 
     def has_add_permission(self, request):
         return False
@@ -23,11 +23,11 @@ class RequestLogAdmin(admin.ModelAdmin):
 
 @admin.register(FieldChangeLog)
 class FieldChangeLogAdmin(admin.ModelAdmin):
-    list_display = ('timestamp', 'model_name', 'record_id', 'field_name', 'change_source', 'changed_by')
-    list_filter = ('model_name', 'change_source')
-    search_fields = ('record_id', 'field_name')
+    list_display = ("timestamp", "model_name", "record_id", "field_name", "change_source", "changed_by")
+    list_filter = ("model_name", "change_source")
+    search_fields = ("record_id", "field_name")
     readonly_fields = [f.name for f in FieldChangeLog._meta.fields]
-    ordering = ('-timestamp',)
+    ordering = ("-timestamp",)
 
     def has_add_permission(self, request):
         return False
@@ -41,19 +41,19 @@ class FieldChangeLogAdmin(admin.ModelAdmin):
 
 @admin.register(APIKey)
 class APIKeyAdmin(admin.ModelAdmin):
-    list_display = ('name', 'key_prefix', 'is_active', 'expires_at', 'last_used_at', 'created_at')
-    list_filter = ('is_active',)
-    search_fields = ('name', 'key_prefix')
-    readonly_fields = ('key_prefix', 'key_hash', 'created_at', 'last_used_at')
+    list_display = ("name", "key_prefix", "is_active", "expires_at", "last_used_at", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("name", "key_prefix")
+    readonly_fields = ("key_prefix", "key_hash", "created_at", "last_used_at")
 
 
 @admin.register(FormSubmission)
 class FormSubmissionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'form_type', 'status', 'auth_type', 'created_at', 'processed_at')
-    list_filter = ('form_type', 'status', 'auth_type')
-    search_fields = ('id', 'form_type', 'auth_identifier')
+    list_display = ("id", "form_type", "status", "auth_type", "created_at", "processed_at")
+    list_filter = ("form_type", "status", "auth_type")
+    search_fields = ("id", "form_type", "auth_identifier")
     readonly_fields = [f.name for f in FormSubmission._meta.fields]
-    ordering = ('-created_at',)
+    ordering = ("-created_at",)
 
     def has_add_permission(self, request):
         return False
