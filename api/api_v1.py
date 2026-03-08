@@ -8,7 +8,13 @@ from django.core.cache import cache
 from django.utils import timezone
 from ninja_extra import NinjaExtraAPI, Router, throttle
 from ninja_extra.throttling import UserRateThrottle
-from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid
+import logging
+
+import jwe
+import jwt
+from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid, get_user_info_by_uuid
+
+logger = logging.getLogger(__name__)
 
 from django.db import connections
 from api.models import SuperUser
@@ -60,7 +66,7 @@ def calculate_cache_expire(duration):
 
 
 def get_user_contact(request, expire=False):
-    user_uuid = get_logged_in_user_uuid(request)
+    user_uuid = getattr(request, "auth_uuid", None) or get_logged_in_user_uuid(request)
     if user_uuid is None:
         return 401, {"code": 401, "detail": "User is not logged in."}
 
@@ -150,6 +156,20 @@ def get_user_contact(request, expire=False):
         return contact
 
 
+def _fetch_accounts_user_info(user_uuid):
+    """Fetch additional user info from the Accounts API. Returns a dict or None."""
+    try:
+        data = get_user_info_by_uuid(user_uuid)
+        if data:
+            return {
+                "salesforce_contact_id": data.get("salesforce_contact_id"),
+                "faculty_status": data.get("faculty_status"),
+            }
+    except Exception:
+        logger.debug("Failed to fetch user info from Accounts API for %s", user_uuid)
+    return None
+
+
 # API endpoints, responses are defined in schemas.py
 #######
 # SSO #
@@ -162,7 +182,22 @@ def sso_info(request):
         "cookie_name": settings.SSO_COOKIE_NAME,
     }
 
-    payload = decrypt_cookie(request.COOKIES.get(settings.SSO_COOKIE_NAME))
+    # Local dev bypass
+    if settings.DEV_USER_UUID:
+        response.update({
+            "logged_in": True,
+            "uuid": settings.DEV_USER_UUID,
+            "name": "Dev User",
+            "is_super_user": SuperUser.is_super_user(settings.DEV_USER_UUID),
+        })
+        accounts_info = _fetch_accounts_user_info(settings.DEV_USER_UUID)
+        if accounts_info:
+            response.update(accounts_info)
+        return response
+
+    cookie_value = request.COOKIES.get(settings.SSO_COOKIE_NAME)
+
+    payload = decrypt_cookie(cookie_value)
     if payload is not None:
         response.update({
             "logged_in": True,
@@ -171,7 +206,41 @@ def sso_info(request):
             "name": payload.name,
             "is_super_user": SuperUser.is_super_user(payload.user_uuid),
         })
+        accounts_info = _fetch_accounts_user_info(payload.user_uuid)
+        if accounts_info:
+            response.update(accounts_info)
+        return response
 
+    # Diagnostics — only when not logged in
+    debug_info = {
+        "cookie_present": cookie_value is not None,
+        "cookie_length": len(cookie_value) if cookie_value else 0,
+        "has_signature_key": bool(settings.SIGNATURE_PUBLIC_KEY),
+        "has_encryption_key": bool(settings.ENCRYPTION_PRIVATE_KEY),
+    }
+
+    if cookie_value:
+        # Try each step separately to pinpoint the failure
+        try:
+            decrypted = jwe.decrypt(cookie_value.encode(), settings.ENCRYPTION_PRIVATE_KEY.encode())
+            debug_info["decryption"] = "ok"
+        except Exception as e:
+            debug_info["decryption"] = f"failed: {type(e).__name__}: {e}"
+            decrypted = None
+
+        if decrypted:
+            try:
+                jwt.decode(
+                    decrypted,
+                    settings.SIGNATURE_PUBLIC_KEY,
+                    audience="OpenStax",
+                    algorithms=["RS256"],
+                )
+                debug_info["signature"] = "ok"
+            except Exception as e:
+                debug_info["signature"] = f"failed: {type(e).__name__}: {e}"
+
+    response["debug"] = debug_info
     return response
 
 
@@ -384,7 +453,7 @@ def salesforce_case(request, payload: CaseCreateSchema):
 )
 @throttle(SalesforceAPIRateThrottle)
 def update_contact(request, payload: ContactUpdateSchema):
-    user_uuid = get_logged_in_user_uuid(request)
+    user_uuid = getattr(request, "auth_uuid", None) or get_logged_in_user_uuid(request)
     if user_uuid is None:
         return 401, {"code": 401, "detail": "User is not logged in."}
 
@@ -494,6 +563,34 @@ def info(request):
     except AttributeError:
         api_usage = {"error": "Salesforce API usage not available."}
 
+    # Validate Accounts API connection
+    accounts_api = {"configured": bool(settings.SOCIAL_AUTH_OPENSTAX_KEY)}
+    if accounts_api["configured"]:
+        try:
+            from openstax_accounts.functions import get_token
+
+            token = get_token()
+            accounts_api["status"] = "ok"
+            accounts_api["token_type"] = token.get("token_type")
+        except Exception as e:
+            accounts_api["status"] = f"error: {type(e).__name__}: {e}"
+    accounts_api["url"] = settings.ACCOUNTS_URL
+
+    # SSO cookie configuration status
+    sso_config = {
+        "cookie_name": settings.SSO_COOKIE_NAME,
+        "has_signature_key": bool(settings.SIGNATURE_PUBLIC_KEY),
+        "has_encryption_key": bool(settings.ENCRYPTION_PRIVATE_KEY),
+        "dev_user_bypass": bool(settings.DEV_USER_UUID),
+    }
+    if settings.SIGNATURE_PUBLIC_KEY:
+        key = settings.SIGNATURE_PUBLIC_KEY.strip()
+        sso_config["signature_key_type"] = "RSA" if "BEGIN" in key else f"unknown ({key[:20]}...)"
+    if settings.ENCRYPTION_PRIVATE_KEY:
+        key = settings.ENCRYPTION_PRIVATE_KEY.strip()
+        sso_config["encryption_key_length"] = len(key)
+        sso_config["encryption_key_type"] = "RSA" if "BEGIN" in key else "symmetric"
+
     return {
         "release_information": {
             "sfapi_version": settings.RELEASE_VERSION,
@@ -503,6 +600,8 @@ def info(request):
             "salesforce_environment": settings.SALESFORCE_ENVIRONMENT,
         },
         "api_usage": api_usage,
+        "accounts_api": accounts_api,
+        "sso_config": sso_config,
     }
 
 

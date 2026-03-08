@@ -33,7 +33,7 @@ pip install -r requirements/dev.txt
 3. Create a `.env` file in the root of the project and add the following environment variables:
 ```sh
 SALESFORCE_CLIENT_ID=<your_client_id>
-SALESFORCE_CLIENT_SECRET=<your_client
+SALESFORCE_CLIENT_SECRET=<your_client_secret>
 SALESFORCE_USERNAME=<your_username>
 SALESFORCE_PASSWORD=<your_password>
 SALESFORCE_SECURITY_TOKEN=<your_security_token>
@@ -41,6 +41,14 @@ SSO_COOKIE_NAME="<oxa_env>"
 SSO_SIGNATURE_PUBLIC_KEY="<public_key_for_accounts>"
 SSO_ENCRYPTION_PRIVATE_KEY="<private_key_for_accounts>"
 SENTRY_DSN="<sentry_dsn>" # not required and will cause a lot of noise in Sentry
+
+# Accounts API (for user lookups — salesforce_contact_id, faculty_status, etc.)
+ACCOUNTS_URL="https://dev.accounts.openstax.org"  # or http://localhost:2999 for local
+ACCOUNTS_CLIENT_ID="<oauth_client_id>"
+ACCOUNTS_CLIENT_SECRET="<oauth_client_secret>"
+
+# Local dev only — bypass SSO cookie validation and authenticate as this UUID
+DEV_USER_UUID="<your_accounts_uuid>"
 ```
 4. Run the server
 ```sh
@@ -64,7 +72,7 @@ The API supports two authentication methods:
 
 To create an API key with all scopes:
 ```sh
-python manage.py create_api_key --name="my-key-name" --scopes="read:books,write:cases"
+python manage.py create_api_key --name="my-key-name" --scopes="read:books,read:info,write:cases"
 ```
 
 Then use it in requests:
@@ -80,6 +88,23 @@ Available scopes:
 Endpoints like `/contact` and `/adoptions` require authentication but no specific scope. The `/schools` endpoint is public.
 
 Super users (SSO users with all scopes) are managed via the Django admin under **Super Users**.
+
+#### Local Development
+
+For local development, you can bypass SSO cookie validation entirely by setting `DEV_USER_UUID` in your `.env` to your OpenStax Accounts UUID. This removes the need to run Accounts locally or deal with cookie domain/crypto issues. This only works when `DEBUG=True` (i.e., `runserver`).
+
+#### Debugging
+
+**`GET /api/v1/sso`** — Public endpoint that shows your current authentication status. When not logged in, includes a `debug` section with diagnostics:
+- Whether the SSO cookie is present
+- Whether the signature and encryption keys are configured
+- Step-by-step decryption/verification results to pinpoint failures
+
+**`GET /api/v1/info`** (requires `read:info` scope) — Admin endpoint that shows system status including:
+- `sso_config` — SSO cookie configuration: cookie name, key presence, key types, and whether the dev bypass is active
+- `accounts_api` — Accounts API connection status: whether OAuth credentials are configured and if token retrieval succeeds
+- `api_usage` — Current Salesforce API usage
+- `release_information` — Version and environment details
 
 #### Rate Limiting
 The API is rate limited to prevent abuse. The rate limit is currently set at **5 requests per minute, per user**.\

@@ -85,11 +85,19 @@ class APIKey(models.Model):
 
 
 class SSOAuth(APIKeyCookie):
-    """Authenticates via OpenStax Accounts SSO cookie."""
+    """Authenticates via OpenStax Accounts SSO cookie.
+    When DEV_USER_UUID is set (local dev only), bypasses cookie validation."""
 
     param_name = settings.SSO_COOKIE_NAME
 
     def authenticate(self, request, key):
+        # Local dev bypass — skip cookie crypto entirely
+        if settings.DEV_USER_UUID:
+            request.auth_uuid = settings.DEV_USER_UUID
+            request.auth_type = "sso"
+            request.auth_scopes = None
+            return settings.DEV_USER_UUID
+
         user_uuid = get_logged_in_user_uuid(request)
         if user_uuid is not None:
             request.auth_uuid = user_uuid
