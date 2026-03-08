@@ -235,6 +235,7 @@ def sso_info(request):
                     settings.SIGNATURE_PUBLIC_KEY,
                     audience="OpenStax",
                     algorithms=["RS256"],
+                    options={"verify_sub": False},
                 )
                 debug_info["signature"] = "ok"
             except Exception as e:
