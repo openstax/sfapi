@@ -56,8 +56,30 @@ The API is versioned and the version is specified in the URL. The current versio
 **Any changes to the API that are not backwards compatible should result in a new version being created.**
 
 #### Authentication
-The API uses cookie based authentication. The user must be logged in to OpenStax Accounts to access their data.\
-A future enhancement will be added to allow applications to call these APIs using a token.
+The API supports two authentication methods:
+
+**1. SSO Cookie** — Users logged in to OpenStax Accounts are authenticated automatically via the `oxa` cookie.
+
+**2. API Key** — For service-to-service access, use a Bearer token in the `Authorization` header.
+
+To create an API key with all scopes:
+```sh
+python manage.py create_api_key --name="my-key-name" --scopes="read:books,write:cases"
+```
+
+Then use it in requests:
+```sh
+curl -H "Authorization: Bearer <your-api-key>" http://localhost:8000/api/v1/books
+```
+
+Available scopes:
+- `read:books` — required for `GET /api/v1/books`
+- `read:info` — required for `GET /api/v1/info`
+- `write:cases` — required for `POST /api/v1/case`
+
+Endpoints like `/contact` and `/adoptions` require authentication but no specific scope. The `/schools` endpoint is public.
+
+Super users (SSO users with all scopes) are managed via the Django admin under **Super Users**.
 
 #### Rate Limiting
 The API is rate limited to prevent abuse. The rate limit is currently set at **5 requests per minute, per user**.\

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import APIKey, FieldChangeLog, FormSubmission, RequestLog
+from .models import APIKey, FieldChangeLog, FormSubmission, RequestLog, SuperUser
 
 
 @admin.register(RequestLog)
@@ -45,6 +45,13 @@ class APIKeyAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     search_fields = ("name", "key_prefix")
     readonly_fields = ("key_prefix", "key_hash", "created_at", "last_used_at")
+
+
+@admin.register(SuperUser)
+class SuperUserAdmin(admin.ModelAdmin):
+    list_display = ("name", "accounts_uuid", "is_active", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("name", "accounts_uuid")
 
 
 @admin.register(FormSubmission)

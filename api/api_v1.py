@@ -8,8 +8,10 @@ from django.core.cache import cache
 from django.utils import timezone
 from ninja_extra import NinjaExtraAPI, Router, throttle
 from ninja_extra.throttling import UserRateThrottle
-from openstax_accounts.functions import get_logged_in_user_uuid
+from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid
 
+from django.db import connections
+from api.models import SuperUser
 from db.models import Account, Adoption, Book, Contact
 from sf.models.case import Case
 from sf.models.contact import Contact as SFContact
@@ -29,6 +31,7 @@ from .schemas import (
     ErrorSchema,
     FormSubmissionResponseSchema,
     FormSubmissionSchema,
+    SSOSchema,
 )
 
 # Cache durations in seconds, calculated with math.prod() to use them in the api
@@ -50,16 +53,6 @@ possible_error_codes = frozenset([401, 404, 422])
 # Throttling for Salesforce endpoints to prevent API calls going over the limit
 class SalesforceAPIRateThrottle(UserRateThrottle):
     rate = settings.SALESFORCE_API_RATE_LIMIT
-
-
-# Legacy auth functions kept for /info/ endpoint (sf/views.py)
-def has_auth(request):
-    return get_logged_in_user_uuid(request) is not None
-
-
-def has_super_auth(request):
-    uuid = get_logged_in_user_uuid(request)
-    return uuid in settings.SUPER_USERS
 
 
 def calculate_cache_expire(duration):
@@ -158,6 +151,30 @@ def get_user_contact(request, expire=False):
 
 
 # API endpoints, responses are defined in schemas.py
+#######
+# SSO #
+#######
+@router.get("/sso", response={200: SSOSchema}, tags=["user"])
+def sso_info(request):
+    response = {
+        "logged_in": False,
+        "accounts_environment": settings.ACCOUNTS_ENVIRONMENT,
+        "cookie_name": settings.SSO_COOKIE_NAME,
+    }
+
+    payload = decrypt_cookie(request.COOKIES.get(settings.SSO_COOKIE_NAME))
+    if payload is not None:
+        response.update({
+            "logged_in": True,
+            "uuid": payload.user_uuid,
+            "id": payload.user_id,
+            "name": payload.name,
+            "is_super_user": SuperUser.is_super_user(payload.user_uuid),
+        })
+
+    return response
+
+
 ###########
 # Contact #
 ###########
@@ -453,6 +470,40 @@ def submit_form(request, payload: FormSubmissionSchema):
     process_submission(submission)
 
     return {"id": str(submission.id), "form_type": submission.form_type, "status": submission.status}
+
+
+########
+# Info #
+########
+@router.get("/info", auth=combined_auth, response={200: dict, possible_error_codes: ErrorSchema}, tags=["admin"])
+def info(request):
+    if not has_scope(request, "read:info"):
+        return 401, {"code": 401, "detail": "Insufficient permissions. Required scope: read:info"}
+
+    try:
+        api_usage_data = connections["salesforce"].connection.api_usage
+        api_usage = {
+            "api_usage": api_usage_data.api_usage,
+            "api_limit": api_usage_data.api_limit,
+        }
+
+        if api_usage_data.api_usage / api_usage_data.api_limit > settings.SALESFORCE_API_USE_ALERT_THRESHOLD:
+            sentry_sdk.capture_message(
+                f"Salesforce API usage is at {api_usage_data.api_usage / api_usage_data.api_limit * 100}%"
+            )
+    except AttributeError:
+        api_usage = {"error": "Salesforce API usage not available."}
+
+    return {
+        "release_information": {
+            "sfapi_version": settings.RELEASE_VERSION,
+            "deployment_version": settings.DEPLOYMENT_VERSION,
+            "environment": settings.ENVIRONMENT,
+            "accounts_environment": settings.ACCOUNTS_ENVIRONMENT,
+            "salesforce_environment": settings.SALESFORCE_ENVIRONMENT,
+        },
+        "api_usage": api_usage,
+    }
 
 
 # Add the endpoints to the API

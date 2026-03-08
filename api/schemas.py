@@ -68,6 +68,16 @@ class UserSchema(Schema):
     uuid: str
 
 
+class SSOSchema(Schema):
+    uuid: Optional[str] = None
+    id: Optional[int] = None
+    name: Optional[str] = None
+    is_super_user: Optional[bool] = None
+    logged_in: bool
+    accounts_environment: str
+    cookie_name: str
+
+
 class ContactSchema(Schema):
     id: str
     first_name: Optional[str]

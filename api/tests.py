@@ -9,6 +9,7 @@ from django.utils import timezone
 from ninja.testing import TestClient
 
 from api.auth import APIKey
+from api.models import SuperUser
 from db.models import Account, Adoption, Book, Contact, Opportunity
 
 from .api_v1 import router
@@ -17,6 +18,7 @@ logging.disable(logging.CRITICAL)
 
 # Test UUID for mocking authenticated requests
 TEST_UUID = str(uuid.uuid4())
+SUPER_USER_UUID = "f8a6b8b8-32f7-4b4d-b6f9-054ab6fb5623"
 
 
 def mock_logged_in_user(request):
@@ -252,6 +254,7 @@ class BooksEndpointTest(TestCase):
     def setUp(self):
         self.client = TestClient(router)
         Book.objects.create(id="a0B000000000001", name="Physics", official_name="College Physics", type="Textbook")
+        SuperUser.objects.create(accounts_uuid=SUPER_USER_UUID, name="Test Super")
 
     @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_super_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_super_user)
@@ -321,6 +324,7 @@ class CaseValidationTest(TestCase):
 
     def setUp(self):
         self.client = TestClient(router)
+        SuperUser.objects.create(accounts_uuid=SUPER_USER_UUID, name="Test Super")
 
     @patch("api.auth.get_logged_in_user_uuid", side_effect=mock_super_user)
     @patch("api.api_v1.get_logged_in_user_uuid", side_effect=mock_super_user)
