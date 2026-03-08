@@ -6,7 +6,7 @@ django-ninja-extra==0.30.8
 django-redis==6.0.0
 django-redisboard==9.0.0
 django-salesforce-agpl==5.2
-django-openstax-accounts==1.1.1
+django-openstax-accounts==1.1.2
 django-openstax-healthcheck==1.0
 psycopg2==2.9.11
 PyJWE==1.0.0
