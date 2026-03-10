@@ -282,13 +282,8 @@ class SFAPIUsageLogTest(TestCase):
 
 class SyncAllCommandTest(TestCase):
     @patch("sf.management.commands.sync_all.should_sync", return_value=MOCK_SHOULD_SYNC)
-    @patch("sf.management.commands.sync_all.track_sf_calls")
     @patch("sf.management.commands.sync_all.call_command")
-    def test_runs_all_syncs_in_order(self, mock_call, mock_track, mock_should):
-        # Make track_sf_calls return a mock counter
-        mock_track.return_value.__enter__ = MagicMock(return_value=[0])
-        mock_track.return_value.__exit__ = MagicMock(return_value=False)
-
+    def test_runs_all_syncs_in_order(self, mock_call, mock_should):
         out = StringIO()
         call_command("sync_all", stdout=out)
 
@@ -301,12 +296,8 @@ class SyncAllCommandTest(TestCase):
             self.assertIn("--skip-usage-check", c[0])
 
     @patch("sf.management.commands.sync_all.should_sync", return_value=MOCK_SHOULD_SYNC)
-    @patch("sf.management.commands.sync_all.track_sf_calls")
     @patch("sf.management.commands.sync_all.call_command")
-    def test_passes_force_flag(self, mock_call, mock_track, mock_should):
-        mock_track.return_value.__enter__ = MagicMock(return_value=[0])
-        mock_track.return_value.__exit__ = MagicMock(return_value=False)
-
+    def test_passes_force_flag(self, mock_call, mock_should):
         out = StringIO()
         call_command("sync_all", "--force", stdout=out)
 

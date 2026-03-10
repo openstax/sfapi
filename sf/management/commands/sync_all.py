@@ -3,7 +3,7 @@ import time
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
-from sf.api_usage import should_sync, track_sf_calls
+from sf.api_usage import should_sync
 
 
 class Command(BaseCommand):
@@ -32,16 +32,15 @@ class Command(BaseCommand):
         if forcedelete:
             sub_args.append("--forcedelete")
 
+        # Each sub-command tracks its own SF API calls via track_sf_calls.
+        # We don't wrap them here to avoid double-counting from nested execute_wrappers.
         steps = ["sync_accounts", "sync_contacts", "sync_opportunities", "sync_adoptions"]
 
-        with track_sf_calls("sync_all") as counter:
-            for step in steps:
-                self.stdout.write(self.style.MIGRATE_HEADING(f"--- {step} ---"))
-                call_command(step, *sub_args, "--skip-usage-check", stdout=self.stdout, stderr=self.stderr)
+        for step in steps:
+            self.stdout.write(self.style.MIGRATE_HEADING(f"--- {step} ---"))
+            call_command(step, *sub_args, "--skip-usage-check", stdout=self.stdout, stderr=self.stderr)
 
         duration = time.time() - start_time
         self.stdout.write(
-            self.style.SUCCESS(
-                f"\nAll syncs complete! {counter[0]} total SF API calls. Duration: {duration:.1f}s"
-            )
+            self.style.SUCCESS(f"\nAll syncs complete! Duration: {duration:.1f}s")
         )

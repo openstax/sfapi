@@ -3,13 +3,19 @@ import threading
 from contextlib import contextmanager
 
 import sentry_sdk
+from django.conf import settings
 from django.db import connections
 from django.utils import timezone
 
 logger = logging.getLogger("openstax")
 
-# Thread-local storage for tracking SF query counts
+# Thread-local storage for tracking SF query counts as a stack (supports nesting)
 _local = threading.local()
+
+
+def _get_sf_db_alias():
+    """Get the database alias that SF models actually query against."""
+    return getattr(settings, "SALESFORCE_DB_ALIAS", "salesforce")
 
 
 class _SFQueryCounter:
@@ -17,9 +23,10 @@ class _SFQueryCounter:
 
     def __call__(self, execute, sql, params, many, context):
         result = execute(sql, params, many, context)
-        counter = getattr(_local, "sf_query_count", None)
-        if counter is not None:
-            counter[0] += 1
+        stack = getattr(_local, "sf_counter_stack", None)
+        if stack:
+            # Increment only the top-of-stack counter (innermost context)
+            stack[-1][0] += 1
         return result
 
 
@@ -35,19 +42,23 @@ def track_sf_calls(source):
         with track_sf_calls("sync_accounts"):
             # ... SF queries happen here ...
     """
-    _local.sf_query_count = [0]
-    db = connections["salesforce"]
+    if not hasattr(_local, "sf_counter_stack"):
+        _local.sf_counter_stack = []
+
+    counter = [0]
+    _local.sf_counter_stack.append(counter)
+
+    db = connections[_get_sf_db_alias()]
     with db.execute_wrapper(_counter_wrapper):
         try:
-            yield _local.sf_query_count
+            yield counter
         finally:
-            count = _local.sf_query_count[0]
-            _local.sf_query_count = None
-            if count > 0:
+            _local.sf_counter_stack.pop()
+            if counter[0] > 0:
                 from api.models import SFAPIUsageLog
 
-                SFAPIUsageLog.increment(source, count)
-                logger.info("SF API calls for %s: %d", source, count)
+                SFAPIUsageLog.increment(source, counter[0])
+                logger.info("SF API calls for %s: %d", source, counter[0])
 
 
 def get_sf_api_usage():
