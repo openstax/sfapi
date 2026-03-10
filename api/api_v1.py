@@ -128,7 +128,7 @@ def _fetch_accounts_user_info(user_uuid):
         url = settings.USERS_QUERY + urlencode(
             {"q": f"uuid:{user_uuid}", "access_token": token["access_token"]}
         )
-        with urlopen(url) as resp:
+        with urlopen(url) as resp:  # noqa: S310 - URL built from trusted settings.USERS_QUERY
             data = json.loads(resp.read().decode())
 
         user = data["items"][0]
