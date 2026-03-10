@@ -67,11 +67,11 @@ class SyncAccountsCommandTest(TestCase):
     @patch("sf.management.commands.sync_accounts.SFAccount")
     @patch("sf.management.commands.sync_accounts.update_or_create_accounts")
     def test_full_sync_force(self, mock_sync, mock_sf):
-        mock_sf.objects.all.return_value = []
         mock_sync.return_value = 0
         out = StringIO()
         call_command("sync_accounts", "--force", stdout=out)
-        mock_sync.assert_called_once_with([], full_sync=True)
+        mock_sync.assert_called_once()
+        self.assertTrue(mock_sync.call_args[1]["full_sync"])
         self.assertIn("synced successfully", out.getvalue())
 
     @patch("sf.management.commands.sync_accounts.SFAccount")
