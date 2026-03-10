@@ -183,12 +183,14 @@ def sso_info(request):
 
     # Local dev bypass
     if settings.DEV_USER_UUID:
-        response.update({
-            "logged_in": True,
-            "uuid": settings.DEV_USER_UUID,
-            "name": "Dev User",
-            "is_super_user": SuperUser.is_super_user(settings.DEV_USER_UUID),
-        })
+        response.update(
+            {
+                "logged_in": True,
+                "uuid": settings.DEV_USER_UUID,
+                "name": "Dev User",
+                "is_super_user": SuperUser.is_super_user(settings.DEV_USER_UUID),
+            }
+        )
         accounts_info = _fetch_accounts_user_info(settings.DEV_USER_UUID)
         if accounts_info:
             response.update(accounts_info)
@@ -198,13 +200,15 @@ def sso_info(request):
 
     payload = decrypt_cookie(cookie_value)
     if payload is not None:
-        response.update({
-            "logged_in": True,
-            "uuid": payload.user_uuid,
-            "id": payload.user_id,
-            "name": payload.name,
-            "is_super_user": SuperUser.is_super_user(payload.user_uuid),
-        })
+        response.update(
+            {
+                "logged_in": True,
+                "uuid": payload.user_uuid,
+                "id": payload.user_id,
+                "name": payload.name,
+                "is_super_user": SuperUser.is_super_user(payload.user_uuid),
+            }
+        )
         accounts_info = _fetch_accounts_user_info(payload.user_uuid)
         if accounts_info:
             response.update(accounts_info)
