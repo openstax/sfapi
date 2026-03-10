@@ -201,12 +201,59 @@ class SyncAdoptionsCommandTest(TestCase):
 
 
 class SyncBooksCommandTest(TestCase):
-    @patch("sf.management.commands.sync_books.should_sync", return_value=(True, "ok"))
+    @patch("sf.management.commands.sync_books.should_sync", return_value=MOCK_SHOULD_SYNC)
     @patch("sf.management.commands.sync_books.SFBook")
     @patch("sf.management.commands.sync_books.update_or_create_books")
-    def test_sync(self, mock_sync, mock_sf, mock_should_sync):
+    def test_sync(self, mock_sync, mock_sf, _):
         mock_sync.return_value = 0
         out = StringIO()
         call_command("sync_books", stdout=out)
         mock_sync.assert_called_once()
         self.assertIn("synced successfully", out.getvalue())
+
+
+class SyncConfigTest(TestCase):
+    def test_kill_switch_blocks_sync(self):
+        """When sync_enabled=False, should_sync returns False."""
+        from api.models import SyncConfig
+
+        config = SyncConfig.get()
+        config.sync_enabled = False
+        config.save()
+
+        from sf.api_usage import should_sync
+
+        allowed, reason = should_sync()
+        self.assertFalse(allowed)
+        self.assertIn("kill switch", reason)
+
+    @patch("sf.api_usage.get_sf_api_usage", return_value=(250000, 285000))
+    def test_threshold_blocks_sync(self, mock_usage):
+        """When API usage exceeds threshold, should_sync returns False."""
+        from api.models import SyncConfig
+
+        config = SyncConfig.get()
+        config.pause_threshold = 0.85
+        config.save()
+
+        from sf.api_usage import should_sync
+
+        allowed, reason = should_sync()
+        self.assertFalse(allowed)
+        self.assertIn("too high", reason)
+
+    @patch("sf.api_usage.get_sf_api_usage", return_value=(100000, 285000))
+    def test_below_threshold_allows_sync(self, mock_usage):
+        """When API usage is below threshold, should_sync returns True."""
+        from sf.api_usage import should_sync
+
+        allowed, reason = should_sync()
+        self.assertTrue(allowed)
+
+    @patch("sf.api_usage.get_sf_api_usage", return_value=(None, None))
+    def test_unavailable_usage_allows_sync(self, mock_usage):
+        """When API usage can't be fetched, allow sync to proceed."""
+        from sf.api_usage import should_sync
+
+        allowed, reason = should_sync()
+        self.assertTrue(allowed)
