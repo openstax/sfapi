@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import math
 import time
@@ -11,7 +12,7 @@ from django.core.cache import cache
 from django.utils import timezone
 from ninja_extra import NinjaExtraAPI, Router, throttle
 from ninja_extra.throttling import UserRateThrottle
-from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid, get_user_info_by_uuid
+from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid
 
 from api.models import SuperUser
 from db.models import Account, Adoption, Book, Contact
@@ -112,14 +113,31 @@ def get_user_contact(request, expire=False):
 
 
 def _fetch_accounts_user_info(user_uuid):
-    """Fetch additional user info from the Accounts API. Returns a dict or None."""
+    """Fetch additional user info from the Accounts API. Returns a dict or None.
+
+    Calls the Accounts API directly instead of using the openstax_accounts helper,
+    because retrieve_user_data() doesn't include salesforce_contact_id in its response.
+    """
     try:
-        data = get_user_info_by_uuid(user_uuid)
-        if data:
-            return {
-                "salesforce_contact_id": data.get("salesforce_contact_id"),
-                "faculty_status": data.get("faculty_status"),
-            }
+        from urllib.parse import urlencode
+        from urllib.request import urlopen
+
+        from openstax_accounts.functions import get_token
+
+        token = get_token()
+        url = settings.USERS_QUERY + urlencode(
+            {"q": f"uuid:{user_uuid}", "access_token": token["access_token"]}
+        )
+        with urlopen(url) as resp:
+            data = json.loads(resp.read().decode())
+
+        user = data["items"][0]
+        return {
+            "salesforce_contact_id": user.get("salesforce_contact_id"),
+            "faculty_status": user.get("faculty_status"),
+        }
+    except (IndexError, KeyError):
+        logger.debug("No user found in Accounts API for %s", user_uuid)
     except Exception:
         logger.debug("Failed to fetch user info from Accounts API for %s", user_uuid)
     return None
