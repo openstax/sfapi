@@ -1,15 +1,20 @@
 import datetime
+import logging
 import math
 import time
 
+import jwe
+import jwt
 import sentry_sdk
 from django.conf import settings
 from django.core.cache import cache
+from django.db import connections
 from django.utils import timezone
 from ninja_extra import NinjaExtraAPI, Router, throttle
 from ninja_extra.throttling import UserRateThrottle
-from openstax_accounts.functions import get_logged_in_user_uuid
+from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid, get_user_info_by_uuid
 
+from api.models import SuperUser
 from db.models import Account, Adoption, Book, Contact
 from sf.models.case import Case
 from sf.models.contact import Contact as SFContact
@@ -29,7 +34,10 @@ from .schemas import (
     ErrorSchema,
     FormSubmissionResponseSchema,
     FormSubmissionSchema,
+    SSOSchema,
 )
+
+logger = logging.getLogger(__name__)
 
 # Cache durations in seconds, calculated with math.prod() to use them in the api
 # A reasonable format is to use math.prod([seconds, minutes, hours, days]) to calculate the duration
@@ -52,22 +60,12 @@ class SalesforceAPIRateThrottle(UserRateThrottle):
     rate = settings.SALESFORCE_API_RATE_LIMIT
 
 
-# Legacy auth functions kept for /info/ endpoint (sf/views.py)
-def has_auth(request):
-    return get_logged_in_user_uuid(request) is not None
-
-
-def has_super_auth(request):
-    uuid = get_logged_in_user_uuid(request)
-    return uuid in settings.SUPER_USERS
-
-
 def calculate_cache_expire(duration):
     return timezone.now() + datetime.timedelta(seconds=duration)
 
 
 def get_user_contact(request, expire=False):
-    user_uuid = get_logged_in_user_uuid(request)
+    user_uuid = getattr(request, "auth_uuid", None) or get_logged_in_user_uuid(request)
     if user_uuid is None:
         return 401, {"code": 401, "detail": "User is not logged in."}
 
@@ -157,7 +155,99 @@ def get_user_contact(request, expire=False):
         return contact
 
 
+def _fetch_accounts_user_info(user_uuid):
+    """Fetch additional user info from the Accounts API. Returns a dict or None."""
+    try:
+        data = get_user_info_by_uuid(user_uuid)
+        if data:
+            return {
+                "salesforce_contact_id": data.get("salesforce_contact_id"),
+                "faculty_status": data.get("faculty_status"),
+            }
+    except Exception:
+        logger.debug("Failed to fetch user info from Accounts API for %s", user_uuid)
+    return None
+
+
 # API endpoints, responses are defined in schemas.py
+#######
+# SSO #
+#######
+@router.get("/sso", response={200: SSOSchema}, tags=["user"])
+def sso_info(request):
+    response = {
+        "logged_in": False,
+        "accounts_environment": settings.ACCOUNTS_ENVIRONMENT,
+        "cookie_name": settings.SSO_COOKIE_NAME,
+    }
+
+    # Local dev bypass
+    if settings.DEV_USER_UUID:
+        response.update(
+            {
+                "logged_in": True,
+                "uuid": settings.DEV_USER_UUID,
+                "name": "Dev User",
+                "is_super_user": SuperUser.is_super_user(settings.DEV_USER_UUID),
+            }
+        )
+        accounts_info = _fetch_accounts_user_info(settings.DEV_USER_UUID)
+        if accounts_info:
+            response.update(accounts_info)
+        return response
+
+    cookie_value = request.COOKIES.get(settings.SSO_COOKIE_NAME)
+
+    payload = decrypt_cookie(cookie_value)
+    if payload is not None:
+        response.update(
+            {
+                "logged_in": True,
+                "uuid": payload.user_uuid,
+                "id": payload.user_id,
+                "name": payload.name,
+                "is_super_user": SuperUser.is_super_user(payload.user_uuid),
+            }
+        )
+        accounts_info = _fetch_accounts_user_info(payload.user_uuid)
+        if accounts_info:
+            response.update(accounts_info)
+        return response
+
+    # Diagnostics — only when not logged in
+    debug_info = {
+        "cookie_present": cookie_value is not None,
+        "cookie_length": len(cookie_value) if cookie_value else 0,
+        "has_signature_key": bool(settings.SIGNATURE_PUBLIC_KEY),
+        "has_encryption_key": bool(settings.ENCRYPTION_PRIVATE_KEY),
+    }
+
+    if cookie_value:
+        # Try each step separately to pinpoint the failure
+        try:
+            decrypted = jwe.decrypt(cookie_value.encode(), settings.ENCRYPTION_PRIVATE_KEY.encode())
+            debug_info["decryption"] = "ok"
+        except Exception as e:
+            debug_info["decryption"] = f"failed: {type(e).__name__}: {e}"
+            decrypted = None
+
+        if decrypted:
+            try:
+                jwt.decode(
+                    decrypted,
+                    settings.SIGNATURE_PUBLIC_KEY,
+                    audience="OpenStax",
+                    algorithms=["RS256"],
+                    options={"verify_sub": False},
+                )
+                debug_info["signature"] = "ok"
+            except Exception as e:
+                debug_info["signature"] = f"failed: {type(e).__name__}: {e}"
+
+    response["debug"] = debug_info
+    return response
+
+
 ###########
 # Contact #
 ###########
@@ -367,7 +457,7 @@ def salesforce_case(request, payload: CaseCreateSchema):
 )
 @throttle(SalesforceAPIRateThrottle)
 def update_contact(request, payload: ContactUpdateSchema):
-    user_uuid = get_logged_in_user_uuid(request)
+    user_uuid = getattr(request, "auth_uuid", None) or get_logged_in_user_uuid(request)
     if user_uuid is None:
         return 401, {"code": 401, "detail": "User is not logged in."}
 
@@ -453,6 +543,83 @@ def submit_form(request, payload: FormSubmissionSchema):
     process_submission(submission)
 
     return {"id": str(submission.id), "form_type": submission.form_type, "status": submission.status}
+
+
+########
+# Info #
+########
+@router.get("/info", auth=combined_auth, response={200: dict, possible_error_codes: ErrorSchema}, tags=["admin"])
+def info(request):
+    if not has_scope(request, "read:info"):
+        return 401, {"code": 401, "detail": "Insufficient permissions. Required scope: read:info"}
+
+    try:
+        api_usage_data = connections["salesforce"].connection.api_usage
+        api_usage = {
+            "api_usage": api_usage_data.api_usage,
+            "api_limit": api_usage_data.api_limit,
+        }
+
+        if api_usage_data.api_usage / api_usage_data.api_limit > settings.SALESFORCE_API_USE_ALERT_THRESHOLD:
+            sentry_sdk.capture_message(
+                f"Salesforce API usage is at {api_usage_data.api_usage / api_usage_data.api_limit * 100}%"
+            )
+    except AttributeError:
+        api_usage = {"error": "Salesforce API usage not available."}
+
+    # Validate Accounts API connection
+    accounts_api = {"configured": bool(settings.SOCIAL_AUTH_OPENSTAX_KEY)}
+    # Optional live check to avoid coupling every /info call to the Accounts service
+    live_accounts_check = request.GET.get("live_accounts_check")
+    live_accounts_check = str(live_accounts_check).lower() in ("1", "true", "yes", "on")
+    if accounts_api["configured"] and live_accounts_check:
+        try:
+            from openstax_accounts.functions import get_token
+
+            cache_key = "info_accounts_api_status"
+            cached_status = cache.get(cache_key)
+            if cached_status is not None:
+                accounts_api.update(cached_status)
+            else:
+                token = get_token()
+                status_data = {
+                    "status": "ok",
+                    "token_type": token.get("token_type"),
+                }
+                cache.set(cache_key, status_data, timeout=60)
+                accounts_api.update(status_data)
+        except Exception:
+            logger.exception("Failed to validate Accounts API connection")
+            accounts_api["status"] = "error"
+    accounts_api["url"] = settings.ACCOUNTS_URL
+
+    # SSO cookie configuration status
+    sso_config = {
+        "cookie_name": settings.SSO_COOKIE_NAME,
+        "has_signature_key": bool(settings.SIGNATURE_PUBLIC_KEY),
+        "has_encryption_key": bool(settings.ENCRYPTION_PRIVATE_KEY),
+        "dev_user_bypass": bool(settings.DEV_USER_UUID),
+    }
+    if settings.SIGNATURE_PUBLIC_KEY:
+        key = settings.SIGNATURE_PUBLIC_KEY.strip()
+        sso_config["signature_key_type"] = "RSA" if "BEGIN" in key else f"unknown ({key[:20]}...)"
+    if settings.ENCRYPTION_PRIVATE_KEY:
+        key = settings.ENCRYPTION_PRIVATE_KEY.strip()
+        sso_config["encryption_key_length"] = len(key)
+        sso_config["encryption_key_type"] = "RSA" if "BEGIN" in key else "symmetric"
+
+    return {
+        "release_information": {
+            "sfapi_version": settings.RELEASE_VERSION,
+            "deployment_version": settings.DEPLOYMENT_VERSION,
+            "environment": settings.ENVIRONMENT,
+            "accounts_environment": settings.ACCOUNTS_ENVIRONMENT,
+            "salesforce_environment": settings.SALESFORCE_ENVIRONMENT,
+        },
+        "api_usage": api_usage,
+        "accounts_api": accounts_api,
+        "sso_config": sso_config,
+    }
 
 
 # Add the endpoints to the API

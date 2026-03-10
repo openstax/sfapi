@@ -43,13 +43,21 @@ else:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# Set Accounts URL and environment for /info/
+# Set Accounts URL and environment
 ACCOUNTS_URL = os.getenv("ACCOUNTS_URL", "https://accounts.openstax.org")
 ACCOUNTS_ENVIRONMENT = "production"
-if "dev" in ACCOUNTS_URL:
+if "localhost" in ACCOUNTS_URL or "127.0.0.1" in ACCOUNTS_URL:
+    ACCOUNTS_ENVIRONMENT = "local"
+elif "dev" in ACCOUNTS_URL:
     ACCOUNTS_ENVIRONMENT = "dev"
 elif "staging" in ACCOUNTS_URL:
     ACCOUNTS_ENVIRONMENT = "staging"
+
+# OAuth client credentials for Accounts API (needed for user lookups)
+SOCIAL_AUTH_OPENSTAX_KEY = os.getenv("ACCOUNTS_CLIENT_ID", "")
+SOCIAL_AUTH_OPENSTAX_SECRET = os.getenv("ACCOUNTS_CLIENT_SECRET", "")
+ACCESS_TOKEN_URL = f"{ACCOUNTS_URL}/oauth/token"
+USERS_QUERY = f"{ACCOUNTS_URL}/api/users?"
 
 if DEBUG:
     ALLOWED_HOSTS = ["*"]
@@ -258,6 +266,10 @@ STATIC_URL = "static/"
 SSO_COOKIE_NAME = os.getenv("SSO_COOKIE_NAME", "oxa")
 SIGNATURE_PUBLIC_KEY = os.getenv("SSO_SIGNATURE_PUBLIC_KEY")
 ENCRYPTION_PRIVATE_KEY = os.getenv("SSO_ENCRYPTION_PRIVATE_KEY")
+
+# Local development SSO bypass — set to a UUID to skip cookie validation entirely.
+# Only works when DEBUG=True. Example: DEV_USER_UUID=f8a6b8b8-32f7-4b4d-b6f9-054ab6fb5623
+DEV_USER_UUID = os.getenv("DEV_USER_UUID") if DEBUG else None
 
 # This list of uuids use the auth decorator has_super_auth, use this to restrict access to certain endpoints
 # during integrations with other systems

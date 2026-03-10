@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from ninja.security import APIKeyCookie, HttpBearer
@@ -84,11 +85,19 @@ class APIKey(models.Model):
 
 
 class SSOAuth(APIKeyCookie):
-    """Authenticates via OpenStax Accounts SSO cookie."""
+    """Authenticates via OpenStax Accounts SSO cookie.
+    When DEV_USER_UUID is set (local dev only), bypasses cookie validation."""
 
-    param_name = "oxa"
+    param_name = settings.SSO_COOKIE_NAME
 
     def authenticate(self, request, key):
+        # Local dev bypass — skip cookie crypto entirely
+        if settings.DEV_USER_UUID:
+            request.auth_uuid = settings.DEV_USER_UUID
+            request.auth_type = "sso"
+            request.auth_scopes = None
+            return settings.DEV_USER_UUID
+
         user_uuid = get_logged_in_user_uuid(request)
         if user_uuid is not None:
             request.auth_uuid = user_uuid
@@ -121,9 +130,9 @@ def has_scope(request, scope):
     SSO users with super auth have all scopes.
     API key users must have the scope in their key."""
     if getattr(request, "auth_type", None) == "sso":
-        from django.conf import settings
+        from api.models import SuperUser
 
-        return getattr(request, "auth_uuid", None) in settings.SUPER_USERS
+        return SuperUser.is_super_user(getattr(request, "auth_uuid", None))
     if getattr(request, "auth_type", None) == "api_key":
         return scope in getattr(request, "auth_scopes", [])
     return False

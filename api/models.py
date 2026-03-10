@@ -1,8 +1,32 @@
 import uuid
 
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from .auth import APIKey  # noqa: F401 — re-export so Django finds it
+
+
+class SuperUser(models.Model):
+    accounts_uuid = models.UUIDField(unique=True, help_text="OpenStax Accounts UUID for this super user.")
+    name = models.CharField(max_length=255, blank=True, help_text="Human-readable name for identification.")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Super User"
+        verbose_name_plural = "Super Users"
+
+    def __str__(self):
+        return f"{self.name} ({self.accounts_uuid})" if self.name else str(self.accounts_uuid)
+
+    @classmethod
+    def is_super_user(cls, user_uuid):
+        if user_uuid is None:
+            return False
+        try:
+            return cls.objects.filter(accounts_uuid=user_uuid, is_active=True).exists()
+        except (ValueError, ValidationError):
+            return False
 
 
 class RequestLog(models.Model):

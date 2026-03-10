@@ -68,6 +68,19 @@ class UserSchema(Schema):
     uuid: str
 
 
+class SSOSchema(Schema):
+    uuid: Optional[str] = None
+    id: Optional[int] = None
+    name: Optional[str] = None
+    is_super_user: Optional[bool] = None
+    salesforce_contact_id: Optional[str] = None
+    faculty_status: Optional[str] = None
+    logged_in: bool
+    accounts_environment: str
+    cookie_name: str
+    debug: Optional[dict] = None
+
+
 class ContactSchema(Schema):
     id: str
     first_name: Optional[str]
