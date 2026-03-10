@@ -41,6 +41,4 @@ class Command(BaseCommand):
             call_command(step, *sub_args, "--skip-usage-check", stdout=self.stdout, stderr=self.stderr)
 
         duration = time.time() - start_time
-        self.stdout.write(
-            self.style.SUCCESS(f"\nAll syncs complete! Duration: {duration:.1f}s")
-        )
+        self.stdout.write(self.style.SUCCESS(f"\nAll syncs complete! Duration: {duration:.1f}s"))

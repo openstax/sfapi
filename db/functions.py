@@ -165,9 +165,7 @@ def update_or_create_contacts(salesforce_contacts, full_sync=False):
     # Only check account IDs that are actually referenced in this batch
     referenced_account_ids = {c.account_id for c in salesforce_contacts if c.account_id}
     if referenced_account_ids:
-        valid_account_ids = set(
-            Account.all_objects.filter(id__in=referenced_account_ids).values_list("id", flat=True)
-        )
+        valid_account_ids = set(Account.all_objects.filter(id__in=referenced_account_ids).values_list("id", flat=True))
     else:
         valid_account_ids = set()
 
@@ -235,15 +233,19 @@ def update_or_create_opportunities(salesforce_opportunities, full_sync=False):
     ref_contact_ids = {o.contact_id for o in salesforce_opportunities if o.contact_id}
     ref_book_ids = {o.book_id for o in salesforce_opportunities if o.book_id}
 
-    valid_account_ids = set(
-        Account.all_objects.filter(id__in=ref_account_ids).values_list("id", flat=True)
-    ) if ref_account_ids else set()
-    valid_contact_ids = set(
-        Contact.all_objects.filter(id__in=ref_contact_ids).values_list("id", flat=True)
-    ) if ref_contact_ids else set()
-    valid_book_ids = set(
-        Book.all_objects.filter(id__in=ref_book_ids).values_list("id", flat=True)
-    ) if ref_book_ids else set()
+    valid_account_ids = (
+        set(Account.all_objects.filter(id__in=ref_account_ids).values_list("id", flat=True))
+        if ref_account_ids
+        else set()
+    )
+    valid_contact_ids = (
+        set(Contact.all_objects.filter(id__in=ref_contact_ids).values_list("id", flat=True))
+        if ref_contact_ids
+        else set()
+    )
+    valid_book_ids = (
+        set(Book.all_objects.filter(id__in=ref_book_ids).values_list("id", flat=True)) if ref_book_ids else set()
+    )
 
     records = []
     synced_ids = []
@@ -327,12 +329,16 @@ def update_or_create_adoptions(salesforce_adoptions, full_sync=False):
     ref_contact_ids = {a.contact_id for a in salesforce_adoptions if a.contact_id}
     ref_opportunity_ids = {a.opportunity_id for a in salesforce_adoptions if a.opportunity_id}
 
-    valid_contact_ids = set(
-        Contact.all_objects.filter(id__in=ref_contact_ids).values_list("id", flat=True)
-    ) if ref_contact_ids else set()
-    valid_opportunity_ids = set(
-        Opportunity.objects.filter(id__in=ref_opportunity_ids).values_list("id", flat=True)
-    ) if ref_opportunity_ids else set()
+    valid_contact_ids = (
+        set(Contact.all_objects.filter(id__in=ref_contact_ids).values_list("id", flat=True))
+        if ref_contact_ids
+        else set()
+    )
+    valid_opportunity_ids = (
+        set(Opportunity.objects.filter(id__in=ref_opportunity_ids).values_list("id", flat=True))
+        if ref_opportunity_ids
+        else set()
+    )
 
     records = []
     synced_ids = []

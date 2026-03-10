@@ -305,7 +305,9 @@ class SyncAllCommandTest(TestCase):
             self.assertIn("--force", c[0])
 
     @patch("sf.management.commands.sync_all.call_command")
-    @patch("sf.management.commands.sync_all.should_sync", return_value=(False, "Sync is disabled via admin kill switch."))
+    @patch(
+        "sf.management.commands.sync_all.should_sync", return_value=(False, "Sync is disabled via admin kill switch.")
+    )
     def test_kill_switch_stops_all(self, mock_should, mock_call):
         out = StringIO()
         call_command("sync_all", stdout=out)

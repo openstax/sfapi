@@ -95,7 +95,12 @@ For local development, you can bypass SSO cookie validation entirely by setting 
 
 #### Debugging
 
-**`GET /api/v1/sso`** — Public endpoint that shows your current authentication status. When not logged in, includes a `debug` section with diagnostics:
+**`GET /api/v1/sso`** — Public endpoint that shows your current authentication status. When logged in, enriches the response with data from the Accounts API (`openstax_accounts` v1.2.0+):
+- `salesforce_contact_id`, `faculty_status`, `adopter_status`
+- `self_reported_role`, `school_type`, `school_location`
+- `assignable_user`, `assignable_school_integrated` — flags for personalizing the Assignable journey
+
+When not logged in, includes a `debug` section with diagnostics:
 - Whether the SSO cookie is present
 - Whether the signature and encryption keys are configured
 - Step-by-step decryption/verification results to pinpoint failures
@@ -103,8 +108,25 @@ For local development, you can bypass SSO cookie validation entirely by setting 
 **`GET /api/v1/info`** (requires `read:info` scope) — Admin endpoint that shows system status including:
 - `sso_config` — SSO cookie configuration: cookie name, key presence, key types, and whether the dev bypass is active
 - `accounts_api` — Accounts API connection status: whether OAuth credentials are configured and if token retrieval succeeds
-- `api_usage` — Current Salesforce API usage
+- `api_usage` — Current Salesforce API usage (from SF `/limits/` endpoint)
 - `release_information` — Version and environment details
+
+#### Data Sync & API Usage Monitoring
+
+Salesforce data is synced to a local PostgreSQL cache via management commands. The primary command is `sync_all`, which runs all interdependent syncs in dependency order:
+
+```sh
+python manage.py sync_all              # accounts → contacts → opportunities → adoptions
+python manage.py sync_all --force      # force full sync of all objects
+python manage.py sync_books            # books sync independently (no FK dependencies)
+```
+
+**Kill switch & API usage threshold**: Syncs can be paused via the Django admin (`SyncConfig`). If daily SF API usage exceeds the configured threshold (default 85% of 285k), syncs are automatically skipped. API call counts are tracked per-source per-day in the admin (`SF API Usage Log`).
+
+Scheduled jobs (via `django_crontab`):
+- `sync_all` — daily at 5:00 AM
+- `sync_books` — weekly Saturday at 11:45 PM
+- `cleanup_logs` — weekly Sunday at 3:00 AM
 
 #### Rate Limiting
 The API is rate limited to prevent abuse. The rate limit is currently set at **5 requests per minute, per user**.\
