@@ -1,5 +1,4 @@
 import datetime
-import json
 import logging
 import math
 import time
@@ -12,7 +11,7 @@ from django.core.cache import cache
 from django.utils import timezone
 from ninja_extra import NinjaExtraAPI, Router, throttle
 from ninja_extra.throttling import UserRateThrottle
-from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid
+from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid, retrieve_user_data
 
 from api.models import SuperUser
 from db.models import Account, Adoption, Book, Contact
@@ -113,31 +112,24 @@ def get_user_contact(request, expire=False):
 
 
 def _fetch_accounts_user_info(user_uuid):
-    """Fetch additional user info from the Accounts API. Returns a dict or None.
+    """Fetch additional user info from the Accounts API via retrieve_user_data().
 
-    Calls the Accounts API directly instead of using the openstax_accounts helper,
-    because retrieve_user_data() doesn't include salesforce_contact_id in its response.
+    Returns a dict with SSO-enrichment fields, or None on failure.
     """
     try:
-        from urllib.parse import urlencode
-        from urllib.request import urlopen
-
-        from openstax_accounts.functions import get_token
-
-        token = get_token()
-        url = settings.USERS_QUERY + urlencode(
-            {"q": f"uuid:{user_uuid}", "access_token": token["access_token"]}
-        )
-        with urlopen(url) as resp:  # noqa: S310 - URL built from trusted settings.USERS_QUERY
-            data = json.loads(resp.read().decode())
-
-        user = data["items"][0]
+        user = retrieve_user_data(user_uuid)
+        if user is None:
+            return None
         return {
             "salesforce_contact_id": user.get("salesforce_contact_id"),
             "faculty_status": user.get("faculty_status"),
+            "adopter_status": user.get("adopter_status"),
+            "self_reported_role": user.get("self_reported_role"),
+            "school_type": user.get("school_type"),
+            "school_location": user.get("school_location"),
+            "assignable_user": user.get("assignable_user"),
+            "assignable_school_integrated": user.get("assignable_school_integrated"),
         }
-    except (IndexError, KeyError):
-        logger.debug("No user found in Accounts API for %s", user_uuid)
     except Exception:
         logger.debug("Failed to fetch user info from Accounts API for %s", user_uuid)
     return None
