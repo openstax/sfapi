@@ -1,10 +1,53 @@
 import logging
+import threading
+from contextlib import contextmanager
 
 import sentry_sdk
 from django.db import connections
 from django.utils import timezone
 
 logger = logging.getLogger("openstax")
+
+# Thread-local storage for tracking SF query counts
+_local = threading.local()
+
+
+class _SFQueryCounter:
+    """Database execute wrapper that counts queries on the salesforce connection."""
+
+    def __call__(self, execute, sql, params, many, context):
+        result = execute(sql, params, many, context)
+        counter = getattr(_local, "sf_query_count", None)
+        if counter is not None:
+            counter[0] += 1
+        return result
+
+
+_counter_wrapper = _SFQueryCounter()
+
+
+@contextmanager
+def track_sf_calls(source):
+    """
+    Context manager that counts SF API calls and logs them.
+
+    Usage:
+        with track_sf_calls("sync_accounts"):
+            # ... SF queries happen here ...
+    """
+    _local.sf_query_count = [0]
+    db = connections["salesforce"]
+    with db.execute_wrapper(_counter_wrapper):
+        try:
+            yield _local.sf_query_count
+        finally:
+            count = _local.sf_query_count[0]
+            _local.sf_query_count = None
+            if count > 0:
+                from api.models import SFAPIUsageLog
+
+                SFAPIUsageLog.increment(source, count)
+                logger.info("SF API calls for %s: %d", source, count)
 
 
 def get_sf_api_usage():
@@ -26,6 +69,10 @@ def get_sf_api_usage():
         url = f"{instance_url}/services/data/v{API_VERSION}/limits/"
         response = session.get(url, timeout=10)
         response.raise_for_status()
+
+        from api.models import SFAPIUsageLog
+
+        SFAPIUsageLog.increment("limits_check")
 
         data = response.json()
         daily_api = data.get("DailyApiRequests", {})

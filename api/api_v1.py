@@ -413,6 +413,8 @@ def salesforce_schools(request, name: str = None):
 def salesforce_case(request, payload: CaseCreateSchema):
     if not has_scope(request, "write:cases"):
         return 401, {"code": 401, "detail": "Insufficient permissions. Required scope: write:cases"}
+    from api.models import SFAPIUsageLog
+
     case = Case.objects.create(
         subject=payload.subject,
         description=payload.description,
@@ -420,6 +422,7 @@ def salesforce_case(request, payload: CaseCreateSchema):
         feature=payload.feature,
         issue=payload.issue,
     )
+    SFAPIUsageLog.increment("api_case_create")
     return case
 
 

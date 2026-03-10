@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 
 from db.functions import update_or_create_contacts
 from db.models import Contact
-from sf.api_usage import should_sync
+from sf.api_usage import should_sync, track_sf_calls
 from sf.models.contact import Contact as SFContact
 
 # Only fetch the fields we actually sync (plus id)
@@ -38,11 +38,15 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--force", action="store_true", help="Force a full sync of all contacts")
         parser.add_argument("--forcedelete", action="store_true", help="Force a full sync of and delete all contacts")
+        parser.add_argument(
+            "--skip-usage-check", action="store_true", help="Skip the API usage/kill switch check (used by sync_all)"
+        )
 
     def handle(self, *args, **options):
-        allowed, reason = should_sync(command=self)
-        if not allowed:
-            return
+        if not options.get("skip_usage_check"):
+            allowed, reason = should_sync(command=self)
+            if not allowed:
+                return
 
         start_time = time.time()
 
@@ -67,9 +71,12 @@ class Command(BaseCommand):
             )
             self.stdout.write(f"Incremental sync from {delta.isoformat()}")
 
-        count = update_or_create_contacts(salesforce_contacts, full_sync=full_sync)
+        with track_sf_calls("sync_contacts") as counter:
+            count = update_or_create_contacts(salesforce_contacts, full_sync=full_sync)
         duration = time.time() - start_time
 
         self.stdout.write(
-            self.style.SUCCESS(f"Contacts synced successfully! {count} upserted. Duration: {duration:.1f}s")
+            self.style.SUCCESS(
+                f"Contacts synced successfully! {count} upserted, {counter[0]} SF API calls. Duration: {duration:.1f}s"
+            )
         )

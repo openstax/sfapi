@@ -94,24 +94,11 @@ INSTALLED_APPS = [
 
 # Cron jobs
 # These update the local database with Salesforce data
+# sync_all runs the interdependent syncs in order: accounts → contacts → opportunities → adoptions
+# Books sync independently (no FK dependencies on other synced objects)
 CRONJOBS = [
-    ("45 23 * * 6", "django.core.management.call_command", ["sync_books"]),  # sync books every Saturday at 11:45pm
-    (
-        "0 5 * * 6",
-        "django.core.management.call_command",
-        ["sync_accounts"],
-    ),  # sync accounts (schools) every Saturday at 5am
-    (
-        "30 5 * * 6",
-        "django.core.management.call_command",
-        ["sync_opportunities"],
-    ),  # sync opportunities every Saturday at 5:30am (after accounts)
-    (
-        "0 6 * * 6",
-        "django.core.management.call_command",
-        ["sync_adoptions"],
-    ),  # sync adoptions every Saturday at 6am (after opportunities)
-    ("0 7 * * *", "django.core.management.call_command", ["sync_contacts"]),  # sync contacts every day at 7am
+    ("45 23 * * 6", "django.core.management.call_command", ["sync_books"]),  # books every Saturday at 11:45pm
+    ("0 5 * * *", "django.core.management.call_command", ["sync_all"]),  # full chain daily at 5am
     ("0 3 * * 0", "django.core.management.call_command", ["cleanup_logs"]),  # clean up audit logs every Sunday at 3am
 ]
 

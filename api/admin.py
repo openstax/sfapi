@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from .models import APIKey, FieldChangeLog, FormSubmission, RequestLog, SuperUser, SyncConfig
+from django.db.models import Sum
+
+from .models import APIKey, FieldChangeLog, FormSubmission, RequestLog, SFAPIUsageLog, SuperUser, SyncConfig
 
 
 @admin.register(RequestLog)
@@ -81,6 +83,34 @@ class SyncConfigAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(SFAPIUsageLog)
+class SFAPIUsageLogAdmin(admin.ModelAdmin):
+    list_display = ("date", "source", "call_count")
+    list_filter = ("source", "date")
+    ordering = ("-date", "source")
+    readonly_fields = [f.name for f in SFAPIUsageLog._meta.fields]
+    date_hierarchy = "date"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        # Add summary stats to the top of the list view
+        extra_context = extra_context or {}
+        from django.utils import timezone
+
+        today = timezone.localdate()
+        today_total = SFAPIUsageLog.objects.filter(date=today).aggregate(total=Sum("call_count"))["total"] or 0
+        extra_context["title"] = f"SF API Usage Logs — Today: {today_total:,} calls"
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 @admin.register(FormSubmission)

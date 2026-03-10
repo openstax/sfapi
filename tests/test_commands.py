@@ -257,3 +257,66 @@ class SyncConfigTest(TestCase):
 
         allowed, reason = should_sync()
         self.assertTrue(allowed)
+
+
+class SFAPIUsageLogTest(TestCase):
+    def test_increment_creates_and_updates(self):
+        from api.models import SFAPIUsageLog
+
+        SFAPIUsageLog.increment("test_source", 5)
+        log = SFAPIUsageLog.objects.get(source="test_source")
+        self.assertEqual(log.call_count, 5)
+
+        SFAPIUsageLog.increment("test_source", 3)
+        log.refresh_from_db()
+        self.assertEqual(log.call_count, 8)
+
+    def test_separate_sources_tracked_independently(self):
+        from api.models import SFAPIUsageLog
+
+        SFAPIUsageLog.increment("source_a", 10)
+        SFAPIUsageLog.increment("source_b", 20)
+        self.assertEqual(SFAPIUsageLog.objects.get(source="source_a").call_count, 10)
+        self.assertEqual(SFAPIUsageLog.objects.get(source="source_b").call_count, 20)
+
+
+class SyncAllCommandTest(TestCase):
+    @patch("sf.management.commands.sync_all.should_sync", return_value=MOCK_SHOULD_SYNC)
+    @patch("sf.management.commands.sync_all.track_sf_calls")
+    @patch("sf.management.commands.sync_all.call_command")
+    def test_runs_all_syncs_in_order(self, mock_call, mock_track, mock_should):
+        # Make track_sf_calls return a mock counter
+        mock_track.return_value.__enter__ = MagicMock(return_value=[0])
+        mock_track.return_value.__exit__ = MagicMock(return_value=False)
+
+        out = StringIO()
+        call_command("sync_all", stdout=out)
+
+        # Verify all 4 syncs were called in dependency order
+        calls = [c[0][0] for c in mock_call.call_args_list]
+        self.assertEqual(calls, ["sync_accounts", "sync_contacts", "sync_opportunities", "sync_adoptions"])
+
+        # Verify --skip-usage-check was passed
+        for c in mock_call.call_args_list:
+            self.assertIn("--skip-usage-check", c[0])
+
+    @patch("sf.management.commands.sync_all.should_sync", return_value=MOCK_SHOULD_SYNC)
+    @patch("sf.management.commands.sync_all.track_sf_calls")
+    @patch("sf.management.commands.sync_all.call_command")
+    def test_passes_force_flag(self, mock_call, mock_track, mock_should):
+        mock_track.return_value.__enter__ = MagicMock(return_value=[0])
+        mock_track.return_value.__exit__ = MagicMock(return_value=False)
+
+        out = StringIO()
+        call_command("sync_all", "--force", stdout=out)
+
+        for c in mock_call.call_args_list:
+            self.assertIn("--force", c[0])
+
+    @patch("sf.management.commands.sync_all.call_command")
+    @patch("sf.management.commands.sync_all.should_sync", return_value=(False, "Sync is disabled via admin kill switch."))
+    def test_kill_switch_stops_all(self, mock_should, mock_call):
+        out = StringIO()
+        call_command("sync_all", stdout=out)
+        # None of the individual syncs should have been called
+        mock_call.assert_not_called()

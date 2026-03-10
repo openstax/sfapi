@@ -53,6 +53,8 @@ def process_submission(submission):
 @register_processor("web_to_case")
 def process_web_to_case(data):
     """Create a Salesforce Case from form data."""
+    from api.models import SFAPIUsageLog
+
     case = Case.objects.create(
         subject=data.get("subject", ""),
         description=data.get("description", ""),
@@ -60,14 +62,18 @@ def process_web_to_case(data):
         feature=data.get("feature"),
         issue=data.get("issue"),
     )
+    SFAPIUsageLog.increment("form_web_to_case")
     return case.pk
 
 
 @register_processor("contact_us")
 def process_contact_us(data):
     """Create a Salesforce Case from a contact us form."""
+    from api.models import SFAPIUsageLog
+
     case = Case.objects.create(
         subject=f"Contact Us: {data.get('subject', 'General Inquiry')}",
         description=data.get("message", ""),
     )
+    SFAPIUsageLog.increment("form_contact_us")
     return case.pk

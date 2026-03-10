@@ -44,6 +44,37 @@ class SyncConfig(models.Model):
         return obj
 
 
+class SFAPIUsageLog(models.Model):
+    """Tracks daily Salesforce API calls made by this application."""
+
+    date = models.DateField(db_index=True)
+    source = models.CharField(
+        max_length=50,
+        db_index=True,
+        help_text="What triggered the API call (e.g. sync_accounts, sync_contacts, api_request, limits_check).",
+    )
+    call_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "SF API Usage Log"
+        verbose_name_plural = "SF API Usage Logs"
+        ordering = ["-date", "source"]
+        unique_together = [("date", "source")]
+
+    def __str__(self):
+        return f"{self.date} | {self.source}: {self.call_count:,}"
+
+    @classmethod
+    def increment(cls, source, count=1):
+        """Increment the call count for today + source. Uses a single upsert query."""
+        from django.utils import timezone
+
+        today = timezone.localdate()
+        obj, created = cls.objects.get_or_create(date=today, source=source, defaults={"call_count": count})
+        if not created:
+            cls.objects.filter(pk=obj.pk).update(call_count=models.F("call_count") + count)
+
+
 class SuperUser(models.Model):
     accounts_uuid = models.UUIDField(unique=True, help_text="OpenStax Accounts UUID for this super user.")
     name = models.CharField(max_length=255, blank=True, help_text="Human-readable name for identification.")
