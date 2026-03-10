@@ -17,7 +17,6 @@ from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid,
 from api.models import SuperUser
 from db.models import Account, Adoption, Book, Contact
 from sf.models.case import Case
-from sf.models.contact import Contact as SFContact
 
 from .auth import combined_auth, has_scope
 from .forms.pipeline import FormPipeline
@@ -77,57 +76,15 @@ def get_user_contact(request, expire=False):
             return cached
 
     try:
-        try:
-            sf_contact = Contact.objects.select_related("account").get(accounts_uuid=user_uuid)
-        except Contact.DoesNotExist:
-            try:
-                sf_contact = SFContact.objects.get(accounts_uuid=user_uuid)
-                # cache locally if it's not in the database
-                try:
-                    account = Account.objects.get(id=sf_contact.account_id)
-                    Contact.objects.update_or_create(
-                        id=sf_contact.id,
-                        defaults={
-                            "first_name": sf_contact.first_name,
-                            "last_name": sf_contact.last_name,
-                            "full_name": sf_contact.full_name,
-                            "email": sf_contact.email,
-                            "role": sf_contact.role,
-                            "position": sf_contact.position,
-                            "title": sf_contact.title,
-                            "account": account,
-                            "adoption_status": sf_contact.adoption_status,
-                            "verification_status": sf_contact.verification_status,
-                            "accounts_uuid": sf_contact.accounts_uuid,
-                            "accounts_id": sf_contact.accounts_id,
-                            "signup_date": sf_contact.signup_date,
-                            "lead_source": sf_contact.lead_source,
-                            "lms": sf_contact.lms,
-                            "last_modified_date": sf_contact.last_modified_date,
-                            "subject_interest": sf_contact.subject_interest,
-                        },
-                    )
-                except Account.DoesNotExist:
-                    pass  # don't block the request if for some reason the account doesn't exist
-                    sentry_sdk.capture_message(
-                        f"Account {sf_contact.account_id} does not exist in local database. Contact: {sf_contact.id}"
-                    )
-            except SFContact.DoesNotExist:
-                return 404, {"code": 404, "detail": f"Salesforce: No contact found for user {user_uuid}."}
-            except SFContact.MultipleObjectsReturned:
-                sf_contact = SFContact.objects.filter(accounts_uuid=user_uuid).latest("last_modified_date")
-                sentry_sdk.capture_message(
-                    f"User {user_uuid} has multiple Salesforce Contacts. Returning the last modified ({sf_contact.id})."
-                )
+        sf_contact = Contact.objects.select_related("account").get(accounts_uuid=user_uuid)
     except Contact.DoesNotExist:
-        sentry_sdk.capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
-        return 404, {"code": 404, "detail": f"User {user_uuid} does not have a valid Contact."}
+        return 404, {"code": 404, "detail": f"No contact found for user {user_uuid}."}
     except Contact.MultipleObjectsReturned:
         sf_contact = (
-            Contact.objects.select_related("account").filter(accounts_id=user_uuid).latest("last_modified_date")
+            Contact.objects.select_related("account").filter(accounts_uuid=user_uuid).latest("last_modified_date")
         )
         sentry_sdk.capture_message(
-            f"User {user_uuid} has multiple Salesforce Contacts. Returning the last modified ({sf_contact.id})."
+            f"User {user_uuid} has multiple contacts. Returning the last modified ({sf_contact.id})."
         )
 
     if sf_contact:
