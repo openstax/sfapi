@@ -565,15 +565,28 @@ def info(request):
 
     # Validate Accounts API connection
     accounts_api = {"configured": bool(settings.SOCIAL_AUTH_OPENSTAX_KEY)}
-    if accounts_api["configured"]:
+    # Optional live check to avoid coupling every /info call to the Accounts service
+    live_accounts_check = request.GET.get("live_accounts_check")
+    live_accounts_check = str(live_accounts_check).lower() in ("1", "true", "yes", "on")
+    if accounts_api["configured"] and live_accounts_check:
         try:
             from openstax_accounts.functions import get_token
 
-            token = get_token()
-            accounts_api["status"] = "ok"
-            accounts_api["token_type"] = token.get("token_type")
-        except Exception as e:
-            accounts_api["status"] = f"error: {type(e).__name__}: {e}"
+            cache_key = "info_accounts_api_status"
+            cached_status = cache.get(cache_key)
+            if cached_status is not None:
+                accounts_api.update(cached_status)
+            else:
+                token = get_token()
+                status_data = {
+                    "status": "ok",
+                    "token_type": token.get("token_type"),
+                }
+                cache.set(cache_key, status_data, timeout=60)
+                accounts_api.update(status_data)
+        except Exception:
+            logger.exception("Failed to validate Accounts API connection")
+            accounts_api["status"] = "error"
     accounts_api["url"] = settings.ACCOUNTS_URL
 
     # SSO cookie configuration status
