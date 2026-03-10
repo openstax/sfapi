@@ -6,6 +6,44 @@ from django.db import models
 from .auth import APIKey  # noqa: F401 — re-export so Django finds it
 
 
+class SyncConfig(models.Model):
+    """Singleton configuration for Salesforce sync behavior. Managed via Django admin."""
+
+    sync_enabled = models.BooleanField(
+        default=True,
+        help_text="Kill switch: uncheck to pause all sync management commands.",
+    )
+    api_limit = models.PositiveIntegerField(
+        default=285000,
+        help_text="Salesforce org's daily API call limit.",
+    )
+    pause_threshold = models.FloatField(
+        default=0.85,
+        help_text="Pause syncs when API usage exceeds this fraction of the limit (0.0-1.0).",
+    )
+    last_usage_check = models.DateTimeField(null=True, blank=True, editable=False)
+    last_usage_value = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    last_usage_limit = models.PositiveIntegerField(null=True, blank=True, editable=False)
+
+    class Meta:
+        verbose_name = "Sync Configuration"
+        verbose_name_plural = "Sync Configuration"
+
+    def __str__(self):
+        status = "enabled" if self.sync_enabled else "PAUSED"
+        return f"Sync config ({status}, pause at {self.pause_threshold:.0%} of {self.api_limit:,})"
+
+    def save(self, *args, **kwargs):
+        # Enforce singleton: always use pk=1
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class SuperUser(models.Model):
     accounts_uuid = models.UUIDField(unique=True, help_text="OpenStax Accounts UUID for this super user.")
     name = models.CharField(max_length=255, blank=True, help_text="Human-readable name for identification.")

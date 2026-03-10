@@ -63,10 +63,14 @@ class CreateApiKeyCommandTest(TestCase):
         self.assertNotIn("Never", output)
 
 
+MOCK_SHOULD_SYNC = (True, "ok")
+
+
 class SyncAccountsCommandTest(TestCase):
+    @patch("sf.management.commands.sync_accounts.should_sync", return_value=MOCK_SHOULD_SYNC)
     @patch("sf.management.commands.sync_accounts.SFAccount")
     @patch("sf.management.commands.sync_accounts.update_or_create_accounts")
-    def test_full_sync_force(self, mock_sync, mock_sf):
+    def test_full_sync_force(self, mock_sync, mock_sf, _):
         mock_sync.return_value = 0
         out = StringIO()
         call_command("sync_accounts", "--force", stdout=out)
@@ -74,9 +78,10 @@ class SyncAccountsCommandTest(TestCase):
         self.assertTrue(mock_sync.call_args[1]["full_sync"])
         self.assertIn("synced successfully", out.getvalue())
 
+    @patch("sf.management.commands.sync_accounts.should_sync", return_value=MOCK_SHOULD_SYNC)
     @patch("sf.management.commands.sync_accounts.SFAccount")
     @patch("sf.management.commands.sync_accounts.update_or_create_accounts")
-    def test_forcedelete(self, mock_sync, mock_sf):
+    def test_forcedelete(self, mock_sync, mock_sf, _):
         # Create some accounts to be deleted
         Account.all_objects.create(id="001000000000001", name="Test", last_modified_date=timezone.now())
         mock_sf.objects.all.return_value = []
@@ -85,9 +90,10 @@ class SyncAccountsCommandTest(TestCase):
         call_command("sync_accounts", "--forcedelete", stdout=out)
         self.assertIn("Deleted all local accounts", out.getvalue())
 
+    @patch("sf.management.commands.sync_accounts.should_sync", return_value=MOCK_SHOULD_SYNC)
     @patch("sf.management.commands.sync_accounts.SFAccount")
     @patch("sf.management.commands.sync_accounts.update_or_create_accounts")
-    def test_incremental_sync(self, mock_sync, mock_sf):
+    def test_incremental_sync(self, mock_sync, mock_sf, _):
         # Create enough accounts to trigger incremental
         for i in range(101):
             Account.all_objects.create(
@@ -104,9 +110,10 @@ class SyncAccountsCommandTest(TestCase):
 
 
 class SyncContactsCommandTest(TestCase):
+    @patch("sf.management.commands.sync_contacts.should_sync", return_value=MOCK_SHOULD_SYNC)
     @patch("sf.management.commands.sync_contacts.SFContact")
     @patch("sf.management.commands.sync_contacts.update_or_create_contacts")
-    def test_full_sync_force(self, mock_sync, mock_sf):
+    def test_full_sync_force(self, mock_sync, mock_sf, _):
         mock_sf.objects.filter.return_value = []
         mock_sync.return_value = 0
         out = StringIO()
@@ -114,9 +121,10 @@ class SyncContactsCommandTest(TestCase):
         mock_sync.assert_called_once()
         self.assertIn("synced successfully", out.getvalue())
 
+    @patch("sf.management.commands.sync_contacts.should_sync", return_value=MOCK_SHOULD_SYNC)
     @patch("sf.management.commands.sync_contacts.SFContact")
     @patch("sf.management.commands.sync_contacts.update_or_create_contacts")
-    def test_forcedelete(self, mock_sync, mock_sf):
+    def test_forcedelete(self, mock_sync, mock_sf, _):
         Contact.all_objects.create(
             id="003000000000001",
             first_name="T",
@@ -133,9 +141,10 @@ class SyncContactsCommandTest(TestCase):
         call_command("sync_contacts", "--forcedelete", stdout=out)
         self.assertIn("Deleted all local contacts", out.getvalue())
 
+    @patch("sf.management.commands.sync_contacts.should_sync", return_value=MOCK_SHOULD_SYNC)
     @patch("sf.management.commands.sync_contacts.SFContact")
     @patch("sf.management.commands.sync_contacts.update_or_create_contacts")
-    def test_incremental_sync(self, mock_sync, mock_sf):
+    def test_incremental_sync(self, mock_sync, mock_sf, _):
         for i in range(101):
             Contact.all_objects.create(
                 id=f"003{i:015d}",
@@ -156,9 +165,10 @@ class SyncContactsCommandTest(TestCase):
 
 
 class SyncOpportunitiesCommandTest(TestCase):
+    @patch("sf.management.commands.sync_opportunities.should_sync", return_value=MOCK_SHOULD_SYNC)
     @patch("sf.management.commands.sync_opportunities.SFOpportunity")
     @patch("sf.management.commands.sync_opportunities.update_or_create_opportunities")
-    def test_full_sync_force(self, mock_sync, mock_sf):
+    def test_full_sync_force(self, mock_sync, mock_sf, _):
         mock_sf.objects.all.return_value = []
         mock_sync.return_value = 0
         out = StringIO()
@@ -166,9 +176,10 @@ class SyncOpportunitiesCommandTest(TestCase):
         mock_sync.assert_called_once()
         self.assertIn("synced successfully", out.getvalue())
 
+    @patch("sf.management.commands.sync_opportunities.should_sync", return_value=MOCK_SHOULD_SYNC)
     @patch("sf.management.commands.sync_opportunities.SFOpportunity")
     @patch("sf.management.commands.sync_opportunities.update_or_create_opportunities")
-    def test_forcedelete(self, mock_sync, mock_sf):
+    def test_forcedelete(self, mock_sync, mock_sf, _):
         mock_sf.objects.all.return_value = []
         mock_sync.return_value = 0
         out = StringIO()
@@ -177,9 +188,10 @@ class SyncOpportunitiesCommandTest(TestCase):
 
 
 class SyncAdoptionsCommandTest(TestCase):
+    @patch("sf.management.commands.sync_adoptions.should_sync", return_value=MOCK_SHOULD_SYNC)
     @patch("sf.management.commands.sync_adoptions.SFAdoption")
     @patch("sf.management.commands.sync_adoptions.update_or_create_adoptions")
-    def test_full_sync_force(self, mock_sync, mock_sf):
+    def test_full_sync_force(self, mock_sync, mock_sf, _):
         mock_sf.objects.all.return_value = []
         mock_sync.return_value = 0
         out = StringIO()
@@ -189,12 +201,12 @@ class SyncAdoptionsCommandTest(TestCase):
 
 
 class SyncBooksCommandTest(TestCase):
+    @patch("sf.management.commands.sync_books.should_sync", return_value=(True, "ok"))
     @patch("sf.management.commands.sync_books.SFBook")
     @patch("sf.management.commands.sync_books.update_or_create_books")
-    def test_sync(self, mock_sync, mock_sf):
-        mock_sf.objects.all.return_value = []
+    def test_sync(self, mock_sync, mock_sf, mock_should_sync):
         mock_sync.return_value = 0
         out = StringIO()
         call_command("sync_books", stdout=out)
-        mock_sync.assert_called_once_with(mock_sf.objects.all.return_value, full_sync=True)
+        mock_sync.assert_called_once()
         self.assertIn("synced successfully", out.getvalue())

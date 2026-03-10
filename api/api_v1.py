@@ -8,7 +8,6 @@ import jwt
 import sentry_sdk
 from django.conf import settings
 from django.core.cache import cache
-from django.db import connections
 from django.utils import timezone
 from ninja_extra import NinjaExtraAPI, Router, throttle
 from ninja_extra.throttling import UserRateThrottle
@@ -510,18 +509,14 @@ def info(request):
     if not has_scope(request, "read:info"):
         return 401, {"code": 401, "detail": "Insufficient permissions. Required scope: read:info"}
 
-    try:
-        api_usage_data = connections["salesforce"].connection.api_usage
-        api_usage = {
-            "api_usage": api_usage_data.api_usage,
-            "api_limit": api_usage_data.api_limit,
-        }
+    from sf.api_usage import get_sf_api_usage
 
-        if api_usage_data.api_usage / api_usage_data.api_limit > settings.SALESFORCE_API_USE_ALERT_THRESHOLD:
-            sentry_sdk.capture_message(
-                f"Salesforce API usage is at {api_usage_data.api_usage / api_usage_data.api_limit * 100}%"
-            )
-    except AttributeError:
+    used, limit = get_sf_api_usage()
+    if used is not None and limit:
+        api_usage = {"api_usage": used, "api_limit": limit}
+        if used / limit > settings.SALESFORCE_API_USE_ALERT_THRESHOLD:
+            sentry_sdk.capture_message(f"Salesforce API usage is at {used / limit * 100:.1f}%")
+    else:
         api_usage = {"error": "Salesforce API usage not available."}
 
     # Validate Accounts API connection

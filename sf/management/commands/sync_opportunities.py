@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand
 
 from db.functions import update_or_create_opportunities
 from db.models import Opportunity
+from sf.api_usage import should_sync
 from sf.models.opportunity import Opportunity as SFOpportunity
 
 # Only fetch the fields we actually sync (plus id)
@@ -49,6 +50,10 @@ class Command(BaseCommand):
         parser.add_argument("--forcedelete", action="store_true", help="Force a full sync and delete all opportunities")
 
     def handle(self, *args, **options):
+        allowed, reason = should_sync(command=self)
+        if not allowed:
+            return
+
         start_time = time.time()
 
         full_sync = False

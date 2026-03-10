@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand
 
 from db.functions import update_or_create_contacts
 from db.models import Contact
+from sf.api_usage import should_sync
 from sf.models.contact import Contact as SFContact
 
 # Only fetch the fields we actually sync (plus id)
@@ -39,6 +40,10 @@ class Command(BaseCommand):
         parser.add_argument("--forcedelete", action="store_true", help="Force a full sync of and delete all contacts")
 
     def handle(self, *args, **options):
+        allowed, reason = should_sync(command=self)
+        if not allowed:
+            return
+
         start_time = time.time()
 
         full_sync = False

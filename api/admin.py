@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import APIKey, FieldChangeLog, FormSubmission, RequestLog, SuperUser
+from .models import APIKey, FieldChangeLog, FormSubmission, RequestLog, SuperUser, SyncConfig
 
 
 @admin.register(RequestLog)
@@ -52,6 +52,35 @@ class SuperUserAdmin(admin.ModelAdmin):
     list_display = ("name", "accounts_uuid", "is_active", "created_at")
     list_filter = ("is_active",)
     search_fields = ("name", "accounts_uuid")
+
+
+@admin.register(SyncConfig)
+class SyncConfigAdmin(admin.ModelAdmin):
+    list_display = ("sync_enabled", "pause_threshold", "api_limit", "last_usage_display")
+    readonly_fields = ("last_usage_check", "last_usage_value", "last_usage_limit")
+    fieldsets = (
+        ("Kill Switch", {"fields": ("sync_enabled",)}),
+        ("API Usage Threshold", {"fields": ("api_limit", "pause_threshold")}),
+        (
+            "Last Usage Check (auto-updated by sync commands)",
+            {"fields": ("last_usage_check", "last_usage_value", "last_usage_limit")},
+        ),
+    )
+
+    def last_usage_display(self, obj):
+        if obj.last_usage_value is not None and obj.last_usage_limit:
+            pct = obj.last_usage_value / obj.last_usage_limit * 100
+            return f"{obj.last_usage_value:,}/{obj.last_usage_limit:,} ({pct:.1f}%)"
+        return "No data"
+
+    last_usage_display.short_description = "Last API Usage"
+
+    def has_add_permission(self, request):
+        # Only allow one instance
+        return not SyncConfig.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(FormSubmission)

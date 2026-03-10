@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand
 
 from db.functions import ACCOUNT_SYNC_FIELDS, update_or_create_accounts
 from db.models import Account
+from sf.api_usage import should_sync
 from sf.models.account import Account as SFAccount
 
 # Only fetch the fields we actually sync (plus id)
@@ -19,6 +20,10 @@ class Command(BaseCommand):
         parser.add_argument("--forcedelete", action="store_true", help="Force a full sync of and delete all accounts")
 
     def handle(self, *args, **options):
+        allowed, reason = should_sync(command=self)
+        if not allowed:
+            return
+
         start_time = time.time()
 
         full_sync = False
