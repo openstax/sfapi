@@ -1,9 +1,9 @@
 import hashlib
 import secrets
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from django.conf import settings
 from ninja.security import APIKeyCookie, HttpBearer
 from openstax_accounts.functions import get_logged_in_user_uuid
 

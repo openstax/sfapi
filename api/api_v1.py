@@ -1,22 +1,19 @@
 import datetime
+import logging
 import math
 import time
 
+import jwe
+import jwt
 import sentry_sdk
 from django.conf import settings
 from django.core.cache import cache
+from django.db import connections
 from django.utils import timezone
 from ninja_extra import NinjaExtraAPI, Router, throttle
 from ninja_extra.throttling import UserRateThrottle
-import logging
-
-import jwe
-import jwt
 from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid, get_user_info_by_uuid
 
-logger = logging.getLogger(__name__)
-
-from django.db import connections
 from api.models import SuperUser
 from db.models import Account, Adoption, Book, Contact
 from sf.models.case import Case
@@ -39,6 +36,8 @@ from .schemas import (
     FormSubmissionSchema,
     SSOSchema,
 )
+
+logger = logging.getLogger(__name__)
 
 # Cache durations in seconds, calculated with math.prod() to use them in the api
 # A reasonable format is to use math.prod([seconds, minutes, hours, days]) to calculate the duration
