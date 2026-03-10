@@ -84,7 +84,7 @@ def get_user_contact(request, expire=False):
                 sf_contact = SFContact.objects.get(accounts_uuid=user_uuid)
                 # cache locally if it's not in the database
                 try:
-                    account = Account.objects.get(id=sf_contact.account.id)
+                    account = Account.objects.get(id=sf_contact.account_id)
                     Contact.objects.update_or_create(
                         id=sf_contact.id,
                         defaults={
@@ -110,12 +110,12 @@ def get_user_contact(request, expire=False):
                 except Account.DoesNotExist:
                     pass  # don't block the request if for some reason the account doesn't exist
                     sentry_sdk.capture_message(
-                        f"Account {sf_contact.account.id} does not exist in local database. Contact: {sf_contact.id}"
+                        f"Account {sf_contact.account_id} does not exist in local database. Contact: {sf_contact.id}"
                     )
             except SFContact.DoesNotExist:
                 return 404, {"code": 404, "detail": f"Salesforce: No contact found for user {user_uuid}."}
             except SFContact.MultipleObjectsReturned:
-                sf_contact = SFContact.objects.filter(accounts_id=user_uuid).latest("last_modified_date")
+                sf_contact = SFContact.objects.filter(accounts_uuid=user_uuid).latest("last_modified_date")
                 sentry_sdk.capture_message(
                     f"User {user_uuid} has multiple Salesforce Contacts. Returning the last modified ({sf_contact.id})."
                 )

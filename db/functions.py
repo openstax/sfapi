@@ -165,7 +165,7 @@ def update_or_create_contacts(salesforce_contacts, full_sync=False):
     skipped = 0
 
     for contact in salesforce_contacts:
-        account_id = contact.account.id if contact.account else None
+        account_id = contact.account_id
         if account_id and account_id not in account_ids:
             capture_exception(Exception(f"Account with id {account_id} does not exist"))
             skipped += 1
@@ -224,9 +224,9 @@ def update_or_create_opportunities(salesforce_opportunities, full_sync=False):
     skipped = 0
 
     for opp in salesforce_opportunities:
-        account_id = opp.account.id if opp.account else None
-        contact_id = opp.contact.id if opp.contact else None
-        book_id = opp.book.id if opp.book else None
+        account_id = opp.account_id
+        contact_id = opp.contact_id
+        book_id = opp.book_id
 
         if account_id and account_id not in account_ids:
             capture_exception(Exception(f"Account with id {account_id} does not exist (opportunity {opp.id})"))
@@ -301,8 +301,8 @@ def update_or_create_adoptions(salesforce_adoptions, full_sync=False):
     skipped = 0
 
     for adoption in salesforce_adoptions:
-        contact_id = adoption.contact.id if adoption.contact else None
-        opportunity_id = adoption.opportunity.id if adoption.opportunity else None
+        contact_id = adoption.contact_id
+        opportunity_id = adoption.opportunity_id
 
         if contact_id and contact_id not in contact_ids:
             capture_exception(Exception(f"Contact with id {contact_id} does not exist (adoption {adoption.id})"))
