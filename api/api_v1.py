@@ -125,9 +125,7 @@ def _fetch_accounts_user_info(user_uuid):
     """
     try:
         token = get_token()
-        url = settings.USERS_QUERY + urlencode(
-            {"q": f"uuid:{user_uuid}", "access_token": token["access_token"]}
-        )
+        url = settings.USERS_QUERY + urlencode({"q": f"uuid:{user_uuid}", "access_token": token["access_token"]})
         with urlopen(url) as response:  # noqa: S310 - URL built from trusted ACCOUNTS_URL setting
             data = json.loads(response.read().decode())
 
