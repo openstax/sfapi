@@ -60,7 +60,7 @@ python manage.py sync_accounts --forcedelete # reset and resync
 2. **API requests** read exclusively from local `db` models (no SF fallback)
 3. **Contact lookup**: SSO cookie → `accounts_uuid` → local Contact → cache in Redis (15 min)
 4. **Adoptions** are cached in Redis (1 hour) with key pattern `sfapi:adoptions{confirmed}:{assumed}:{contact_id}`
-5. **SSO enrichment**: `/sso` endpoint calls Accounts API via `retrieve_user_data()` (`openstax_accounts` v1.2.0+) for fields like `faculty_status`, `adopter_status`, `assignable_user`, `assignable_school_integrated`
+5. **SSO enrichment**: `/me` endpoint calls Accounts API directly (OAuth token + `/api/users?` query) for fields like `faculty_status`, `adopter_status`, `assignable_user`, `assignable_school_integrated`
 
 ### Sync Architecture
 - **`sync_all`** is the primary sync command — runs `sync_accounts → sync_contacts → sync_opportunities → sync_adoptions` in dependency order with a single kill switch / API usage check at the top
@@ -81,7 +81,7 @@ python manage.py sync_accounts --forcedelete # reset and resync
   - `SSOAuth`: Validates OpenStax Accounts SSO cookie via `get_logged_in_user_uuid()`
   - `ServiceAuth`: Validates API keys (model `APIKey` with hashed keys + scoped permissions)
 - `has_scope(request, scope)`: Checks if the authenticated request has a specific permission scope (e.g., `read:books`, `write:cases`)
-- **OpenStax Accounts** (`openstax_accounts` v1.2.0+): Provides `decrypt_cookie`, `get_logged_in_user_uuid`, `retrieve_user_data`. The `/sso` endpoint uses `retrieve_user_data()` for enrichment fields (no more manual `urlopen` workarounds).
+- **OpenStax Accounts** (`openstax_accounts` v1.1.2): Provides `decrypt_cookie`, `get_logged_in_user_uuid`, `get_token`. The `/me` endpoint calls the Accounts API directly for enrichment fields (`salesforce_contact_id`, `faculty_status`, etc.).
 
 ### Scheduled Jobs (django_crontab)
 - `sync_all` — daily at 5:00 AM (accounts → contacts → opportunities → adoptions)

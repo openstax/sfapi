@@ -68,7 +68,7 @@ class UserSchema(Schema):
     uuid: str
 
 
-class SSOSchema(Schema):
+class MeSchema(Schema):
     uuid: Optional[str] = None
     id: Optional[int] = None
     name: Optional[str] = None

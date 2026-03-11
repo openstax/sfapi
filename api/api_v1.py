@@ -1,7 +1,10 @@
 import datetime
+import json
 import logging
 import math
 import time
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
 import jwe
 import jwt
@@ -11,7 +14,7 @@ from django.core.cache import cache
 from django.utils import timezone
 from ninja_extra import NinjaExtraAPI, Router, throttle
 from ninja_extra.throttling import UserRateThrottle
-from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid, retrieve_user_data
+from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid, get_token
 
 from api.models import SuperUser
 from db.models import Account, Adoption, Book, Contact
@@ -32,7 +35,7 @@ from .schemas import (
     ErrorSchema,
     FormSubmissionResponseSchema,
     FormSubmissionSchema,
-    SSOSchema,
+    MeSchema,
 )
 
 logger = logging.getLogger(__name__)
@@ -112,14 +115,26 @@ def get_user_contact(request, expire=False):
 
 
 def _fetch_accounts_user_info(user_uuid):
-    """Fetch additional user info from the Accounts API via retrieve_user_data().
+    """Fetch additional user info from the Accounts API.
+
+    Calls the Accounts API directly to get the full user record,
+    including fields like salesforce_contact_id, assignable_user, etc.
+    that get_user_info_by_uuid() doesn't extract.
 
     Returns a dict with SSO-enrichment fields, or None on failure.
     """
     try:
-        user = retrieve_user_data(user_uuid)
-        if user is None:
+        token = get_token()
+        url = settings.USERS_QUERY + urlencode(
+            {"q": f"uuid:{user_uuid}", "access_token": token["access_token"]}
+        )
+        with urlopen(url) as response:  # noqa: S310 - URL built from trusted ACCOUNTS_URL setting
+            data = json.loads(response.read().decode())
+
+        if not data.get("items"):
             return None
+
+        user = data["items"][0]
         return {
             "salesforce_contact_id": user.get("salesforce_contact_id"),
             "faculty_status": user.get("faculty_status"),
@@ -131,7 +146,7 @@ def _fetch_accounts_user_info(user_uuid):
             "assignable_school_integrated": user.get("assignable_school_integrated"),
         }
     except Exception:
-        logger.debug("Failed to fetch user info from Accounts API for %s", user_uuid)
+        logger.exception("Failed to fetch user info from Accounts API for %s", user_uuid)
     return None
 
 
@@ -139,8 +154,8 @@ def _fetch_accounts_user_info(user_uuid):
 #######
 # SSO #
 #######
-@router.get("/sso", response={200: SSOSchema}, tags=["user"])
-def sso_info(request):
+@router.get("/me", response={200: MeSchema}, tags=["user"])
+def me(request):
     response = {
         "logged_in": False,
         "accounts_environment": settings.ACCOUNTS_ENVIRONMENT,

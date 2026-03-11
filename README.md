@@ -95,7 +95,7 @@ For local development, you can bypass SSO cookie validation entirely by setting 
 
 #### Debugging
 
-**`GET /api/v1/sso`** — Public endpoint that shows your current authentication status. When logged in, enriches the response with data from the Accounts API (`openstax_accounts` v1.2.0+):
+**`GET /api/v1/me`** — Public endpoint that shows your current authentication status. When logged in, enriches the response with data from the Accounts API:
 - `salesforce_contact_id`, `faculty_status`, `adopter_status`
 - `self_reported_role`, `school_type`, `school_location`
 - `assignable_user`, `assignable_school_integrated` — flags for personalizing the Assignable journey
