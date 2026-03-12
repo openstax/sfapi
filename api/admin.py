@@ -1,6 +1,7 @@
 from django.contrib import admin
+from django.db.models import Sum
 
-from .models import APIKey, FieldChangeLog, FormSubmission, RequestLog, SuperUser
+from .models import APIKey, FieldChangeLog, FormSubmission, RequestLog, SFAPIUsageLog, SuperUser, SyncConfig
 
 
 @admin.register(RequestLog)
@@ -52,6 +53,63 @@ class SuperUserAdmin(admin.ModelAdmin):
     list_display = ("name", "accounts_uuid", "is_active", "created_at")
     list_filter = ("is_active",)
     search_fields = ("name", "accounts_uuid")
+
+
+@admin.register(SyncConfig)
+class SyncConfigAdmin(admin.ModelAdmin):
+    list_display = ("sync_enabled", "pause_threshold", "api_limit", "last_usage_display")
+    readonly_fields = ("last_usage_check", "last_usage_value", "last_usage_limit")
+    fieldsets = (
+        ("Kill Switch", {"fields": ("sync_enabled",)}),
+        ("API Usage Threshold", {"fields": ("api_limit", "pause_threshold")}),
+        (
+            "Last Usage Check (auto-updated by sync commands)",
+            {"fields": ("last_usage_check", "last_usage_value", "last_usage_limit")},
+        ),
+    )
+
+    def last_usage_display(self, obj):
+        if obj.last_usage_value is not None and obj.last_usage_limit:
+            pct = obj.last_usage_value / obj.last_usage_limit * 100
+            return f"{obj.last_usage_value:,}/{obj.last_usage_limit:,} ({pct:.1f}%)"
+        return "No data"
+
+    last_usage_display.short_description = "Last API Usage"
+
+    def has_add_permission(self, request):
+        # Only allow one instance
+        return not SyncConfig.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(SFAPIUsageLog)
+class SFAPIUsageLogAdmin(admin.ModelAdmin):
+    list_display = ("date", "source", "call_count")
+    list_filter = ("source", "date")
+    ordering = ("-date", "source")
+    readonly_fields = [f.name for f in SFAPIUsageLog._meta.fields]
+    date_hierarchy = "date"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        # Add summary stats to the top of the list view
+        extra_context = extra_context or {}
+        from django.utils import timezone
+
+        today = timezone.localdate()
+        today_total = SFAPIUsageLog.objects.filter(date=today).aggregate(total=Sum("call_count"))["total"] or 0
+        extra_context["title"] = f"SF API Usage Logs — Today: {today_total:,} calls"
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 @admin.register(FormSubmission)

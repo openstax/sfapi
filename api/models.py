@@ -6,6 +6,75 @@ from django.db import models
 from .auth import APIKey  # noqa: F401 — re-export so Django finds it
 
 
+class SyncConfig(models.Model):
+    """Singleton configuration for Salesforce sync behavior. Managed via Django admin."""
+
+    sync_enabled = models.BooleanField(
+        default=True,
+        help_text="Kill switch: uncheck to pause all sync management commands.",
+    )
+    api_limit = models.PositiveIntegerField(
+        default=285000,
+        help_text="Salesforce org's daily API call limit.",
+    )
+    pause_threshold = models.FloatField(
+        default=0.85,
+        help_text="Pause syncs when API usage exceeds this fraction of the limit (0.0-1.0).",
+    )
+    last_usage_check = models.DateTimeField(null=True, blank=True, editable=False)
+    last_usage_value = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    last_usage_limit = models.PositiveIntegerField(null=True, blank=True, editable=False)
+
+    class Meta:
+        verbose_name = "Sync Configuration"
+        verbose_name_plural = "Sync Configuration"
+
+    def __str__(self):
+        status = "enabled" if self.sync_enabled else "PAUSED"
+        return f"Sync config ({status}, pause at {self.pause_threshold:.0%} of {self.api_limit:,})"
+
+    def save(self, *args, **kwargs):
+        # Enforce singleton: always use pk=1
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class SFAPIUsageLog(models.Model):
+    """Tracks daily Salesforce API calls made by this application."""
+
+    date = models.DateField(db_index=True)
+    source = models.CharField(
+        max_length=50,
+        db_index=True,
+        help_text="What triggered the API call (e.g. sync_accounts, sync_contacts, api_request, limits_check).",
+    )
+    call_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "SF API Usage Log"
+        verbose_name_plural = "SF API Usage Logs"
+        ordering = ["-date", "source"]
+        unique_together = [("date", "source")]
+
+    def __str__(self):
+        return f"{self.date} | {self.source}: {self.call_count:,}"
+
+    @classmethod
+    def increment(cls, source, count=1):
+        """Increment the call count for today + source. Uses a single upsert query."""
+        from django.utils import timezone
+
+        today = timezone.localdate()
+        obj, created = cls.objects.get_or_create(date=today, source=source, defaults={"call_count": count})
+        if not created:
+            cls.objects.filter(pk=obj.pk).update(call_count=models.F("call_count") + count)
+
+
 class SuperUser(models.Model):
     accounts_uuid = models.UUIDField(unique=True, help_text="OpenStax Accounts UUID for this super user.")
     name = models.CharField(max_length=255, blank=True, help_text="Human-readable name for identification.")

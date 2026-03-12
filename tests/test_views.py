@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from django.test import TestCase
 
@@ -21,15 +21,12 @@ class InfoEndpointTest(TestCase):
         response = self.client.get("/api/v1/info")
         self.assertEqual(response.status_code, 401)
 
-    @patch("api.api_v1.connections")
+    @patch("sf.api_usage.get_sf_api_usage", return_value=(1000, 15000))
     @patch("api.api_v1.get_logged_in_user_uuid")
     @patch("api.auth.get_logged_in_user_uuid")
-    def test_authorized_super_user(self, mock_auth_uuid, mock_api_uuid, mock_connections):
+    def test_authorized_super_user(self, mock_auth_uuid, mock_api_uuid, mock_usage):
         mock_auth_uuid.return_value = self.super_uuid
         mock_api_uuid.return_value = self.super_uuid
-        mock_conn = mock_connections.__getitem__.return_value
-        mock_conn.connection.api_usage.api_usage = 1000
-        mock_conn.connection.api_usage.api_limit = 15000
         response = self.client.get("/api/v1/info")
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -37,13 +34,12 @@ class InfoEndpointTest(TestCase):
         self.assertIn("api_usage", data)
         self.assertEqual(data["api_usage"]["api_usage"], 1000)
 
-    @patch("api.api_v1.connections")
+    @patch("sf.api_usage.get_sf_api_usage", return_value=(None, None))
     @patch("api.api_v1.get_logged_in_user_uuid")
     @patch("api.auth.get_logged_in_user_uuid")
-    def test_sf_api_usage_not_available(self, mock_auth_uuid, mock_api_uuid, mock_connections):
+    def test_sf_api_usage_not_available(self, mock_auth_uuid, mock_api_uuid, mock_usage):
         mock_auth_uuid.return_value = self.super_uuid
         mock_api_uuid.return_value = self.super_uuid
-        mock_connections.__getitem__.return_value.connection = MagicMock(spec=[])
         response = self.client.get("/api/v1/info")
         self.assertEqual(response.status_code, 200)
         data = response.json()

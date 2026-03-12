@@ -159,14 +159,23 @@ def update_or_create_contacts(salesforce_contacts, full_sync=False):
     Bulk upsert contacts into the local database using ON CONFLICT DO UPDATE.
     Validates FK references to accounts before insert.
     """
-    account_ids = set(Account.all_objects.values_list("id", flat=True))
+    # Materialize the SF queryset once to avoid re-querying Salesforce
+    salesforce_contacts = list(salesforce_contacts)
+
+    # Only check account IDs that are actually referenced in this batch
+    referenced_account_ids = {c.account_id for c in salesforce_contacts if c.account_id}
+    if referenced_account_ids:
+        valid_account_ids = set(Account.all_objects.filter(id__in=referenced_account_ids).values_list("id", flat=True))
+    else:
+        valid_account_ids = set()
+
     records = []
     synced_ids = []
     skipped = 0
 
     for contact in salesforce_contacts:
-        account_id = contact.account.id if contact.account else None
-        if account_id and account_id not in account_ids:
+        account_id = contact.account_id
+        if account_id and account_id not in valid_account_ids:
             capture_exception(Exception(f"Account with id {account_id} does not exist"))
             skipped += 1
             continue
@@ -216,27 +225,46 @@ def update_or_create_opportunities(salesforce_opportunities, full_sync=False):
     Bulk upsert opportunities into the local database using ON CONFLICT DO UPDATE.
     Validates FK references to accounts, contacts, and books before insert.
     """
-    account_ids = set(Account.all_objects.values_list("id", flat=True))
-    contact_ids = set(Contact.all_objects.values_list("id", flat=True))
-    book_ids = set(Book.all_objects.values_list("id", flat=True))
+    # Materialize the SF queryset once to avoid re-querying Salesforce
+    salesforce_opportunities = list(salesforce_opportunities)
+
+    # Only check FK IDs that are actually referenced in this batch
+    ref_account_ids = {o.account_id for o in salesforce_opportunities if o.account_id}
+    ref_contact_ids = {o.contact_id for o in salesforce_opportunities if o.contact_id}
+    ref_book_ids = {o.book_id for o in salesforce_opportunities if o.book_id}
+
+    valid_account_ids = (
+        set(Account.all_objects.filter(id__in=ref_account_ids).values_list("id", flat=True))
+        if ref_account_ids
+        else set()
+    )
+    valid_contact_ids = (
+        set(Contact.all_objects.filter(id__in=ref_contact_ids).values_list("id", flat=True))
+        if ref_contact_ids
+        else set()
+    )
+    valid_book_ids = (
+        set(Book.all_objects.filter(id__in=ref_book_ids).values_list("id", flat=True)) if ref_book_ids else set()
+    )
+
     records = []
     synced_ids = []
     skipped = 0
 
     for opp in salesforce_opportunities:
-        account_id = opp.account.id if opp.account else None
-        contact_id = opp.contact.id if opp.contact else None
-        book_id = opp.book.id if opp.book else None
+        account_id = opp.account_id
+        contact_id = opp.contact_id
+        book_id = opp.book_id
 
-        if account_id and account_id not in account_ids:
+        if account_id and account_id not in valid_account_ids:
             capture_exception(Exception(f"Account with id {account_id} does not exist (opportunity {opp.id})"))
             skipped += 1
             continue
-        if contact_id and contact_id not in contact_ids:
+        if contact_id and contact_id not in valid_contact_ids:
             capture_exception(Exception(f"Contact with id {contact_id} does not exist (opportunity {opp.id})"))
             skipped += 1
             continue
-        if book_id and book_id not in book_ids:
+        if book_id and book_id not in valid_book_ids:
             capture_exception(Exception(f"Book with id {book_id} does not exist (opportunity {opp.id})"))
             skipped += 1
             continue
@@ -294,21 +322,37 @@ def update_or_create_adoptions(salesforce_adoptions, full_sync=False):
     Bulk upsert adoptions into the local database using ON CONFLICT DO UPDATE.
     Validates FK references to contacts and opportunities before insert.
     """
-    contact_ids = set(Contact.all_objects.values_list("id", flat=True))
-    opportunity_ids = set(Opportunity.objects.values_list("id", flat=True))
+    # Materialize the SF queryset once to avoid re-querying Salesforce
+    salesforce_adoptions = list(salesforce_adoptions)
+
+    # Only check FK IDs that are actually referenced in this batch
+    ref_contact_ids = {a.contact_id for a in salesforce_adoptions if a.contact_id}
+    ref_opportunity_ids = {a.opportunity_id for a in salesforce_adoptions if a.opportunity_id}
+
+    valid_contact_ids = (
+        set(Contact.all_objects.filter(id__in=ref_contact_ids).values_list("id", flat=True))
+        if ref_contact_ids
+        else set()
+    )
+    valid_opportunity_ids = (
+        set(Opportunity.objects.filter(id__in=ref_opportunity_ids).values_list("id", flat=True))
+        if ref_opportunity_ids
+        else set()
+    )
+
     records = []
     synced_ids = []
     skipped = 0
 
     for adoption in salesforce_adoptions:
-        contact_id = adoption.contact.id if adoption.contact else None
-        opportunity_id = adoption.opportunity.id if adoption.opportunity else None
+        contact_id = adoption.contact_id
+        opportunity_id = adoption.opportunity_id
 
-        if contact_id and contact_id not in contact_ids:
+        if contact_id and contact_id not in valid_contact_ids:
             capture_exception(Exception(f"Contact with id {contact_id} does not exist (adoption {adoption.id})"))
             skipped += 1
             continue
-        if opportunity_id and opportunity_id not in opportunity_ids:
+        if opportunity_id and opportunity_id not in valid_opportunity_ids:
             capture_exception(
                 Exception(f"Opportunity with id {opportunity_id} does not exist (adoption {adoption.id})")
             )

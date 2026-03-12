@@ -72,10 +72,9 @@ def _make_opportunity(id="006000000000001", account=None, contact=None, book=Non
 
 def _mock_sf_contact(id, account_id=None):
     now = timezone.now()
-    account = SimpleNamespace(id=account_id) if account_id else None
     return SimpleNamespace(
         id=id,
-        account=account,
+        account_id=account_id,
         first_name="Test",
         last_name="User",
         full_name="Test User",
@@ -99,9 +98,9 @@ def _mock_sf_opportunity(id, account_id=None, contact_id=None, book_id=None):
     now = timezone.now()
     return SimpleNamespace(
         id=id,
-        account=SimpleNamespace(id=account_id) if account_id else None,
-        contact=SimpleNamespace(id=contact_id) if contact_id else None,
-        book=SimpleNamespace(id=book_id) if book_id else None,
+        account_id=account_id,
+        contact_id=contact_id,
+        book_id=book_id,
         record_type_id=None,
         name="Test Opp",
         description=None,
@@ -134,8 +133,8 @@ def _mock_sf_adoption(id, contact_id=None, opportunity_id=None):
     now = timezone.now()
     return SimpleNamespace(
         id=id,
-        contact=SimpleNamespace(id=contact_id) if contact_id else None,
-        opportunity=SimpleNamespace(id=opportunity_id) if opportunity_id else None,
+        contact_id=contact_id,
+        opportunity_id=opportunity_id,
         adoption_number="ADO-000001",
         created_date=now,
         last_modified_date=now,

@@ -1,23 +1,24 @@
 import datetime
+import json
 import logging
 import math
 import time
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
 import jwe
 import jwt
 import sentry_sdk
 from django.conf import settings
 from django.core.cache import cache
-from django.db import connections
 from django.utils import timezone
 from ninja_extra import NinjaExtraAPI, Router, throttle
 from ninja_extra.throttling import UserRateThrottle
-from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid, get_user_info_by_uuid
+from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid, get_token
 
 from api.models import SuperUser
 from db.models import Account, Adoption, Book, Contact
 from sf.models.case import Case
-from sf.models.contact import Contact as SFContact
 
 from .auth import combined_auth, has_scope
 from .forms.pipeline import FormPipeline
@@ -34,7 +35,7 @@ from .schemas import (
     ErrorSchema,
     FormSubmissionResponseSchema,
     FormSubmissionSchema,
-    SSOSchema,
+    MeSchema,
 )
 
 logger = logging.getLogger(__name__)
@@ -77,57 +78,15 @@ def get_user_contact(request, expire=False):
             return cached
 
     try:
-        try:
-            sf_contact = Contact.objects.select_related("account").get(accounts_uuid=user_uuid)
-        except Contact.DoesNotExist:
-            try:
-                sf_contact = SFContact.objects.get(accounts_uuid=user_uuid)
-                # cache locally if it's not in the database
-                try:
-                    account = Account.objects.get(id=sf_contact.account.id)
-                    Contact.objects.update_or_create(
-                        id=sf_contact.id,
-                        defaults={
-                            "first_name": sf_contact.first_name,
-                            "last_name": sf_contact.last_name,
-                            "full_name": sf_contact.full_name,
-                            "email": sf_contact.email,
-                            "role": sf_contact.role,
-                            "position": sf_contact.position,
-                            "title": sf_contact.title,
-                            "account": account,
-                            "adoption_status": sf_contact.adoption_status,
-                            "verification_status": sf_contact.verification_status,
-                            "accounts_uuid": sf_contact.accounts_uuid,
-                            "accounts_id": sf_contact.accounts_id,
-                            "signup_date": sf_contact.signup_date,
-                            "lead_source": sf_contact.lead_source,
-                            "lms": sf_contact.lms,
-                            "last_modified_date": sf_contact.last_modified_date,
-                            "subject_interest": sf_contact.subject_interest,
-                        },
-                    )
-                except Account.DoesNotExist:
-                    pass  # don't block the request if for some reason the account doesn't exist
-                    sentry_sdk.capture_message(
-                        f"Account {sf_contact.account.id} does not exist in local database. Contact: {sf_contact.id}"
-                    )
-            except SFContact.DoesNotExist:
-                return 404, {"code": 404, "detail": f"Salesforce: No contact found for user {user_uuid}."}
-            except SFContact.MultipleObjectsReturned:
-                sf_contact = SFContact.objects.filter(accounts_id=user_uuid).latest("last_modified_date")
-                sentry_sdk.capture_message(
-                    f"User {user_uuid} has multiple Salesforce Contacts. Returning the last modified ({sf_contact.id})."
-                )
+        sf_contact = Contact.objects.select_related("account").get(accounts_uuid=user_uuid)
     except Contact.DoesNotExist:
-        sentry_sdk.capture_message(f"User {user_uuid} does not have a valid Salesforce Contact.")
-        return 404, {"code": 404, "detail": f"User {user_uuid} does not have a valid Contact."}
+        return 404, {"code": 404, "detail": f"No contact found for user {user_uuid}."}
     except Contact.MultipleObjectsReturned:
         sf_contact = (
-            Contact.objects.select_related("account").filter(accounts_id=user_uuid).latest("last_modified_date")
+            Contact.objects.select_related("account").filter(accounts_uuid=user_uuid).latest("last_modified_date")
         )
         sentry_sdk.capture_message(
-            f"User {user_uuid} has multiple Salesforce Contacts. Returning the last modified ({sf_contact.id})."
+            f"User {user_uuid} has multiple contacts. Returning the last modified ({sf_contact.id})."
         )
 
     if sf_contact:
@@ -156,16 +115,36 @@ def get_user_contact(request, expire=False):
 
 
 def _fetch_accounts_user_info(user_uuid):
-    """Fetch additional user info from the Accounts API. Returns a dict or None."""
+    """Fetch additional user info from the Accounts API.
+
+    Calls the Accounts API directly to get the full user record,
+    including fields like salesforce_contact_id, assignable_user, etc.
+    that get_user_info_by_uuid() doesn't extract.
+
+    Returns a dict with SSO-enrichment fields, or None on failure.
+    """
     try:
-        data = get_user_info_by_uuid(user_uuid)
-        if data:
-            return {
-                "salesforce_contact_id": data.get("salesforce_contact_id"),
-                "faculty_status": data.get("faculty_status"),
-            }
+        token = get_token()
+        url = settings.USERS_QUERY + urlencode({"q": f"uuid:{user_uuid}", "access_token": token["access_token"]})
+        with urlopen(url) as response:  # noqa: S310 - URL built from trusted ACCOUNTS_URL setting
+            data = json.loads(response.read().decode())
+
+        if not data.get("items"):
+            return None
+
+        user = data["items"][0]
+        return {
+            "salesforce_contact_id": user.get("salesforce_contact_id"),
+            "faculty_status": user.get("faculty_status"),
+            "adopter_status": user.get("adopter_status"),
+            "self_reported_role": user.get("self_reported_role"),
+            "school_type": user.get("school_type"),
+            "school_location": user.get("school_location"),
+            "assignable_user": user.get("assignable_user"),
+            "assignable_school_integrated": user.get("assignable_school_integrated"),
+        }
     except Exception:
-        logger.debug("Failed to fetch user info from Accounts API for %s", user_uuid)
+        logger.exception("Failed to fetch user info from Accounts API for %s", user_uuid)
     return None
 
 
@@ -173,8 +152,8 @@ def _fetch_accounts_user_info(user_uuid):
 #######
 # SSO #
 #######
-@router.get("/sso", response={200: SSOSchema}, tags=["user"])
-def sso_info(request):
+@router.get("/me", response={200: MeSchema}, tags=["user"])
+def me(request):
     response = {
         "logged_in": False,
         "accounts_environment": settings.ACCOUNTS_ENVIRONMENT,
@@ -439,6 +418,8 @@ def salesforce_schools(request, name: str = None):
 def salesforce_case(request, payload: CaseCreateSchema):
     if not has_scope(request, "write:cases"):
         return 401, {"code": 401, "detail": "Insufficient permissions. Required scope: write:cases"}
+    from api.models import SFAPIUsageLog
+
     case = Case.objects.create(
         subject=payload.subject,
         description=payload.description,
@@ -446,6 +427,7 @@ def salesforce_case(request, payload: CaseCreateSchema):
         feature=payload.feature,
         issue=payload.issue,
     )
+    SFAPIUsageLog.increment("api_case_create")
     return case
 
 
@@ -553,18 +535,14 @@ def info(request):
     if not has_scope(request, "read:info"):
         return 401, {"code": 401, "detail": "Insufficient permissions. Required scope: read:info"}
 
-    try:
-        api_usage_data = connections["salesforce"].connection.api_usage
-        api_usage = {
-            "api_usage": api_usage_data.api_usage,
-            "api_limit": api_usage_data.api_limit,
-        }
+    from sf.api_usage import get_sf_api_usage
 
-        if api_usage_data.api_usage / api_usage_data.api_limit > settings.SALESFORCE_API_USE_ALERT_THRESHOLD:
-            sentry_sdk.capture_message(
-                f"Salesforce API usage is at {api_usage_data.api_usage / api_usage_data.api_limit * 100}%"
-            )
-    except AttributeError:
+    used, limit = get_sf_api_usage()
+    if used is not None and limit:
+        api_usage = {"api_usage": used, "api_limit": limit}
+        if used / limit > settings.SALESFORCE_API_USE_ALERT_THRESHOLD:
+            sentry_sdk.capture_message(f"Salesforce API usage is at {used / limit * 100:.1f}%")
+    else:
         api_usage = {"error": "Salesforce API usage not available."}
 
     # Validate Accounts API connection
