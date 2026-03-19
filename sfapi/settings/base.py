@@ -90,7 +90,13 @@ INSTALLED_APPS = [
     "sf",  # logic for interacting with Salesforce
     "api",  # views and schemas for the API
     "users",  # custom user model and interactions with OpenStax Accounts
+    "pardot",  # Camp Campaign — Pardot/SF data health tracker + dashboard
 ]
+
+# ── Camp Campaign settings ──────────────────────────────────────
+# Pardot API v5 auth piggybacks on the existing django-salesforce connection.
+# Only the Business Unit ID is Pardot-specific.
+SALESFORCE_PARDOT_BUSINESS_UNIT = os.getenv("SALESFORCE_PARDOT_BUSINESS_UNIT", "")
 
 # Cron jobs
 # These update the local database with Salesforce data
@@ -112,6 +118,9 @@ CRONTAB_LOCK_JOBS = os.getenv("CRONTAB_LOCK_JOBS") != "False"
 
 AUTH_USER_MODEL = "users.User"
 LOGIN_URL = "/admin/login/"
+
+# Append trailing slash to URLs for the healthcheck middleware
+APPEND_SLASH = True
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

@@ -138,5 +138,28 @@ The API uses standard HTTP status codes to indicate the success or failure of a 
 The API also returns a JSON object with a `message` key to provide more information about the error.\
 A non-logged in user will receive a 401 status code and a message indicating that they need to log in.
 
+#### Pardot Data Health Dashboard (Camp Campaign)
+
+The `pardot` app provides a marketing data health tracker for Pardot/Account Engagement. It syncs marketing assets (campaigns, forms, landing pages, emails, etc.) and Salesforce health metrics into local tables, computes a health scorecard, and serves a camp-themed dashboard.
+
+**Dashboard**: `https://<host>/pardot/` (requires SSO login + SuperUser status)
+
+**API**: 29 JSON endpoints under `/api/v1/pardot/` — briefing, engagement, assets, campaigns, health-score, issues, tasks, etc.
+
+**Sync commands**:
+```sh
+python manage.py camp_sync              # Tier 1: assets + SF health (~20 API calls)
+python manage.py camp_sync --scout      # Tier 2: + top 500 prospects
+python manage.py camp_sync --survey     # Tier 3: full prospect + activity sync
+python manage.py camp_sync --entities forms,lists   # Selective sync
+```
+
+**Configuration**: Team roster, demerit weights, grade thresholds, and issue templates are managed via Django admin at `/admin/pardot/`.
+
+Pardot API v5 auth reuses the existing Salesforce database connection. The only additional `.env` variable needed:
+```sh
+SALESFORCE_PARDOT_BUSINESS_UNIT=<Pardot Business Unit ID>
+```
+
 ### Deployment
 SFAPI is deployed using [bit-deployment](https://github.com/openstax/bit-deployment).

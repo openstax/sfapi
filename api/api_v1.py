@@ -602,3 +602,8 @@ def info(request):
 
 # Add the endpoints to the API
 api.add_router("", router)
+
+# Pardot data health tracker (Camp Campaign dashboard)
+from pardot.views import router as pardot_router
+
+api.add_router("/pardot", pardot_router)

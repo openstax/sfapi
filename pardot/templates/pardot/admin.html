@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camp Campaign — Admin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏕️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --green: #77AF42;
+    --orange: #F47641;
+    --gray: #5E6062;
+    --yellow: #F4D019;
+    --blue: #0D2C6C;
+    --dark-green: #0C9372;
+    --red: #C22032;
+    --forest: #2d5016;
+    --bark: #8B6914;
+    --earth: #6b4e30;
+    --bg: #faf8f5;
+    --card-bg: #fff;
+    --border: #e0ddd8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Lato', sans-serif;
+    background: var(--bg);
+    color: var(--gray);
+    line-height: 1.5;
+}
+.header {
+    background: linear-gradient(135deg, var(--forest), var(--dark-green));
+    color: white;
+    padding: 1.2rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.header h1 { font-size: 1.4rem; font-weight: 700; }
+.header a { color: rgba(255,255,255,0.8); text-decoration: none; font-size: 0.9rem; }
+.header a:hover { color: white; }
+.container { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
+
+.section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+.section-header {
+    background: linear-gradient(135deg, #f5f3ef, #ebe8e3);
+    padding: 0.8rem 1.2rem;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--forest);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+.section-header:hover { background: #ebe8e3; }
+.section-header .chevron { transition: transform 0.2s; font-size: 0.8rem; }
+.section-header.collapsed .chevron { transform: rotate(-90deg); }
+.section-body { padding: 1.2rem; }
+.section-body.hidden { display: none; }
+
+.btn {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--green); color: white; }
+.btn-danger { background: var(--red); color: white; }
+.btn-secondary { background: var(--gray); color: white; }
+.btn-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+.btn-row { display: flex; gap: 0.5rem; margin-top: 1rem; align-items: center; }
+
+input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.85rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: white;
+    color: var(--gray);
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--green); border-color: var(--green); }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th { text-align: left; font-weight: 700; color: var(--forest); padding: 0.4rem 0.5rem; border-bottom: 2px solid var(--border); }
+td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #f0ede8; vertical-align: top; }
+tr:hover td { background: #faf8f5; }
+
+.team-card {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    background: #fdfcfa;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+}
+.team-card .full-width { grid-column: 1 / -1; }
+.team-card label { font-size: 0.75rem; font-weight: 700; color: var(--forest); display: block; margin-bottom: 0.15rem; }
+.team-card input[type="text"] { width: 100%; }
+.team-card .owns-group { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.team-card .owns-group label { font-weight: 400; font-size: 0.8rem; color: var(--gray); display: inline-flex; align-items: center; gap: 0.2rem; }
+.team-card .remove-btn {
+    justify-self: end;
+    color: var(--red);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    padding: 0.7rem 1.2rem;
+    border-radius: 6px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { background: var(--green); }
+.toast.error { background: var(--red); }
+
+.issue-row { border-bottom: 1px solid #f0ede8; padding: 0.6rem 0; }
+.issue-row:last-child { border-bottom: none; }
+.issue-key { font-weight: 700; font-size: 0.8rem; color: var(--forest); font-family: monospace; }
+.issue-fields { display: grid; grid-template-columns: 1fr 2fr auto; gap: 0.5rem; margin-top: 0.3rem; align-items: start; }
+.issue-fields textarea { width: 100%; min-height: 2.5rem; resize: vertical; }
+.issue-fields input, .issue-fields select { width: 100%; }
+
+.loading { color: #999; font-style: italic; padding: 1rem; }
+
+.progress-row { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.6rem; }
+.progress-row .label { font-size: 0.8rem; font-family: monospace; color: var(--forest); min-width: 180px; font-weight: 700; }
+.progress-bar { flex: 1; height: 20px; background: #e8e5e0; border-radius: 10px; overflow: hidden; position: relative; }
+.progress-fill { height: 100%; background: var(--green); border-radius: 10px; transition: width 0.4s ease; min-width: 2px; }
+.progress-text { font-size: 0.75rem; color: var(--gray); min-width: 110px; text-align: right; }
+
+.cleanup-queue-group { margin-bottom: 1rem; }
+.cleanup-queue-group h4 {
+    font-size: 0.85rem; font-weight: 700; color: var(--forest);
+    margin-bottom: 0.4rem; cursor: pointer; user-select: none;
+}
+.cleanup-queue-group h4:hover { color: var(--dark-green); }
+.cleanup-queue-group h4 .badge {
+    display: inline-block; background: var(--orange); color: white;
+    font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 8px;
+    margin-left: 0.4rem; font-weight: 400;
+}
+.cleanup-queue-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 0.5rem; }
+.cleanup-queue-table th { text-align: left; font-weight: 700; color: var(--gray); padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); font-size: 0.75rem; }
+.cleanup-queue-table td { padding: 0.3rem 0.5rem; border-bottom: 1px solid #f0ede8; }
+.cleanup-queue-table a { color: var(--blue); text-decoration: none; }
+.cleanup-queue-table a:hover { text-decoration: underline; }
+
+.callout {
+    background: #fef9e7; border: 1px solid #f4d019; border-radius: 6px;
+    padding: 0.8rem 1rem; margin-top: 1rem; font-size: 0.82rem; line-height: 1.6;
+}
+.callout strong { color: var(--earth); }
+.callout ol { margin: 0.4rem 0 0 1.2rem; }
+.callout li { margin-bottom: 0.2rem; }
+
+.setup-panel { text-align: center; padding: 1.5rem; }
+.setup-panel p { font-size: 0.9rem; color: var(--gray); margin-bottom: 1rem; max-width: 500px; margin-left: auto; margin-right: auto; }
+.setup-panel .tag-preview { font-family: monospace; font-size: 0.85rem; color: var(--forest); background: #f5f3ef; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block; margin: 0.3rem; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Camp Campaign — Admin</h1>
+    <a href="/pardot/">Back to Dashboard</a>
+</div>
+
+<div class="container">
+
+    <!-- Cleanup Operations -->
+    <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+            Cleanup Operations
+            <span class="chevron">&#9660;</span>
+        </div>
+        <div class="section-body" id="cleanup-body">
+            <div id="cleanup-content"><div class="loading">Loading...</div></div>
+        </div>
+    </div>
+
+    <!-- Camp Dates -->
+    <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+            Camp Dates
+            <span class="chevron">&#9660;</span>
+        </div>
+        <div class="section-body" id="dates-body">
+            <div style="display:flex; gap:1rem; align-items:end; flex-wrap:wrap;">
+                <div>
+                    <label style="font-size:0.75rem; font-weight:700; color:var(--forest); display:block; margin-bottom:0.15rem;">Start Date</label>
+                    <input type="date" id="camp-start">
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; font-weight:700; color:var(--forest); display:block; margin-bottom:0.15rem;">End Date</label>
+                    <input type="date" id="camp-end">
+                </div>
+                <button class="btn btn-primary" onclick="saveDates()">Save Dates</button>
+                <button class="btn btn-secondary btn-sm" onclick="resetConfig('camp_start'); resetConfig('camp_end'); loadConfig();">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity & Staleness -->
+    <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+            Activity & Staleness Thresholds
+            <span class="chevron">&#9660;</span>
+        </div>
+        <div class="section-body" id="thresholds-body">
+            <div style="display:flex; gap:1.5rem; align-items:end; flex-wrap:wrap;">
+                <div>
+                    <label style="font-size:0.75rem; font-weight:700; color:var(--forest); display:block; margin-bottom:0.15rem;">Activity Lookback (days)</label>
+                    <input type="number" id="lookback-days" min="1" max="365" style="width:80px;">
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; font-weight:700; color:var(--forest); display:block; margin-bottom:0.15rem;">List Stale (months)</label>
+                    <input type="number" id="stale-months" min="1" max="36" style="width:80px;">
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; font-weight:700; color:var(--forest); display:block; margin-bottom:0.15rem;">List Severely Stale (months)</label>
+                    <input type="number" id="stale-severe-months" min="1" max="36" style="width:80px;">
+                </div>
+                <button class="btn btn-primary" onclick="saveThresholds()">Save</button>
+                <button class="btn btn-secondary btn-sm" onclick="resetConfig('activity_lookback_days'); resetConfig('list_stale_months'); resetConfig('list_stale_severe_months'); loadConfig();">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Roster -->
+    <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+            Team Roster
+            <span class="chevron">&#9660;</span>
+        </div>
+        <div class="section-body" id="team-body">
+            <div id="team-cards"><div class="loading">Loading...</div></div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="saveTeam()">Save All</button>
+                <button class="btn btn-secondary" onclick="addTeamMember()">+ Add Member</button>
+                <button class="btn btn-secondary btn-sm" onclick="resetTeam()">Reset to Defaults</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grade Thresholds -->
+    <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+            Grade Thresholds
+            <span class="chevron">&#9660;</span>
+        </div>
+        <div class="section-body" id="grades-body">
+            <table>
+                <thead><tr><th>Min Score</th><th>Grade</th></tr></thead>
+                <tbody id="grades-table"></tbody>
+            </table>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="saveGrades()">Save</button>
+                <button class="btn btn-secondary btn-sm" onclick="resetConfig('grade_thresholds'); loadConfig();">Reset to Defaults</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demerit Weights -->
+    <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+            Demerit Weights
+            <span class="chevron">&#9660;</span>
+        </div>
+        <div class="section-body" id="demerits-body">
+            <p style="font-size:0.8rem; color:#999; margin-bottom:0.5rem;">Points subtracted per issue instance. Lower = less impact. Score = 100 - sum(count * weight).</p>
+            <table>
+                <thead><tr><th>Issue Key</th><th>Weight</th></tr></thead>
+                <tbody id="demerits-table"></tbody>
+            </table>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="saveDemerits()">Save</button>
+                <button class="btn btn-secondary btn-sm" onclick="resetConfig('demerits'); loadConfig();">Reset to Defaults</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Issue Templates -->
+    <div class="section">
+        <div class="section-header" onclick="toggleSection(this)">
+            Issue Templates
+            <span class="chevron">&#9660;</span>
+        </div>
+        <div class="section-body" id="templates-body">
+            <p style="font-size:0.8rem; color:#999; margin-bottom:0.5rem;">Title supports <code>{count}</code> placeholder. Priority: high, normal, low.</p>
+            <div id="templates-list"></div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="saveTemplates()">Save</button>
+                <button class="btn btn-secondary btn-sm" onclick="resetConfig('issue_templates'); loadConfig();">Reset to Defaults</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const AREA_OPTIONS = [
+    'campaigns', 'lists', 'forms', 'landing_pages',
+    'list_emails', 'custom_redirects', 'prospects',
+    'sf_health', 'orphans', 'survey'
+];
+
+let configData = {};
+let teamData = [];
+
+// ── Toast ────────────────────────────────────────────────
+function toast(msg, type) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast ' + type + ' show';
+    setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ── Section toggle ───────────────────────────────────────
+function toggleSection(header) {
+    header.classList.toggle('collapsed');
+    const body = header.nextElementSibling;
+    body.classList.toggle('hidden');
+}
+
+// ── Load ─────────────────────────────────────────────────
+async function loadConfig() {
+    try {
+        const res = await fetch('/api/v1/pardot/admin/config');
+        configData = await res.json();
+        renderDates();
+        renderThresholds();
+        renderGrades();
+        renderDemerits();
+        renderTemplates();
+    } catch (e) {
+        toast('Failed to load config', 'error');
+    }
+}
+
+async function loadTeam() {
+    try {
+        const res = await fetch('/api/v1/pardot/admin/team');
+        teamData = await res.json();
+        renderTeam();
+    } catch (e) {
+        toast('Failed to load team', 'error');
+    }
+}
+
+// ── Dates ────────────────────────────────────────────────
+function renderDates() {
+    document.getElementById('camp-start').value = configData.camp_start || '';
+    document.getElementById('camp-end').value = configData.camp_end || '';
+}
+
+async function saveDates() {
+    const start = document.getElementById('camp-start').value;
+    const end = document.getElementById('camp-end').value;
+    if (!start || !end) { toast('Both dates required', 'error'); return; }
+    try {
+        await putConfig('camp_start', start);
+        await putConfig('camp_end', end);
+        toast('Camp dates saved', 'success');
+    } catch (e) { toast('Save failed', 'error'); }
+}
+
+// ── Thresholds ───────────────────────────────────────────
+function renderThresholds() {
+    document.getElementById('lookback-days').value = configData.activity_lookback_days || 30;
+    document.getElementById('stale-months').value = configData.list_stale_months || 6;
+    document.getElementById('stale-severe-months').value = configData.list_stale_severe_months || 12;
+}
+
+async function saveThresholds() {
+    try {
+        await putConfig('activity_lookback_days', parseInt(document.getElementById('lookback-days').value));
+        await putConfig('list_stale_months', parseInt(document.getElementById('stale-months').value));
+        await putConfig('list_stale_severe_months', parseInt(document.getElementById('stale-severe-months').value));
+        toast('Thresholds saved', 'success');
+    } catch (e) { toast('Save failed', 'error'); }
+}
+
+// ── Team ─────────────────────────────────────────────────
+function renderTeam() {
+    const container = document.getElementById('team-cards');
+    if (!teamData.length) {
+        container.innerHTML = '<p style="color:#999;">No team members. Add one below.</p>';
+        return;
+    }
+    container.innerHTML = teamData.map((m, i) => `
+        <div class="team-card" data-idx="${i}">
+            <div>
+                <label>Name</label>
+                <input type="text" class="tm-name" value="${esc(m.name)}">
+            </div>
+            <div>
+                <label>Role</label>
+                <input type="text" class="tm-role" value="${esc(m.role)}">
+            </div>
+            <div class="full-width">
+                <label>Label</label>
+                <input type="text" class="tm-label" value="${esc(m.label)}">
+            </div>
+            <div class="full-width">
+                <label>Owns</label>
+                <div class="owns-group">
+                    ${AREA_OPTIONS.map(a => `
+                        <label><input type="checkbox" class="tm-owns" value="${a}" ${(m.owns||[]).includes(a) ? 'checked' : ''}> ${a}</label>
+                    `).join('')}
+                </div>
+            </div>
+            <button class="remove-btn full-width" onclick="removeTeamMember(${i})">Remove</button>
+        </div>
+    `).join('');
+}
+
+function addTeamMember() {
+    teamData.push({ name: '', role: '', owns: [], label: '' });
+    renderTeam();
+    // Focus the new name input
+    const cards = document.querySelectorAll('.team-card');
+    const last = cards[cards.length - 1];
+    if (last) last.querySelector('.tm-name').focus();
+}
+
+function removeTeamMember(idx) {
+    teamData.splice(idx, 1);
+    renderTeam();
+}
+
+function collectTeam() {
+    const cards = document.querySelectorAll('.team-card');
+    return Array.from(cards).map(card => ({
+        name: card.querySelector('.tm-name').value.trim(),
+        role: card.querySelector('.tm-role').value.trim(),
+        label: card.querySelector('.tm-label').value.trim(),
+        owns: Array.from(card.querySelectorAll('.tm-owns:checked')).map(cb => cb.value),
+    })).filter(m => m.name);
+}
+
+async function saveTeam() {
+    const data = collectTeam();
+    try {
+        const res = await fetch('/api/v1/pardot/admin/team', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error();
+        teamData = await res.json();
+        renderTeam();
+        toast('Team roster saved', 'success');
+    } catch (e) { toast('Save failed', 'error'); }
+}
+
+async function resetTeam() {
+    try {
+        // Delete all team members to revert to defaults
+        const res = await fetch('/api/v1/pardot/admin/team', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify([]),  // empty = will revert to defaults on next read
+        });
+        // Actually we need to delete all rows so defaults kick in
+        // The PUT with empty array will clear the table, and get_team falls back to defaults
+        await loadTeam();
+        toast('Team reset to defaults', 'success');
+    } catch (e) { toast('Reset failed', 'error'); }
+}
+
+// ── Grades ───────────────────────────────────────────────
+function renderGrades() {
+    const grades = configData.grade_thresholds || [[90,'A'],[80,'B'],[70,'C'],[60,'D'],[0,'F']];
+    const tbody = document.getElementById('grades-table');
+    tbody.innerHTML = grades.map((g, i) => `
+        <tr>
+            <td><input type="number" class="grade-threshold" value="${g[0]}" min="0" max="100" style="width:70px;"></td>
+            <td><input type="text" class="grade-letter" value="${esc(g[1])}" style="width:50px;" maxlength="2"></td>
+        </tr>
+    `).join('');
+}
+
+async function saveGrades() {
+    const rows = document.querySelectorAll('#grades-table tr');
+    const thresholds = Array.from(rows).map(row => [
+        parseInt(row.querySelector('.grade-threshold').value),
+        row.querySelector('.grade-letter').value.trim(),
+    ]).filter(g => !isNaN(g[0]) && g[1]);
+    try {
+        await putConfig('grade_thresholds', thresholds);
+        toast('Grade thresholds saved', 'success');
+    } catch (e) { toast('Save failed', 'error'); }
+}
+
+// ── Demerits ─────────────────────────────────────────────
+function renderDemerits() {
+    const demerits = configData.demerits || {};
+    const tbody = document.getElementById('demerits-table');
+    const keys = Object.keys(demerits).sort();
+    tbody.innerHTML = keys.map(k => `
+        <tr>
+            <td style="font-family:monospace; font-size:0.8rem;">${esc(k)}</td>
+            <td><input type="number" class="demerit-weight" data-key="${esc(k)}" value="${demerits[k]}" step="0.01" min="0" max="10" style="width:80px;"></td>
+        </tr>
+    `).join('');
+}
+
+async function saveDemerits() {
+    const inputs = document.querySelectorAll('.demerit-weight');
+    const demerits = {};
+    inputs.forEach(inp => { demerits[inp.dataset.key] = parseFloat(inp.value) || 0; });
+    try {
+        await putConfig('demerits', demerits);
+        toast('Demerit weights saved', 'success');
+    } catch (e) { toast('Save failed', 'error'); }
+}
+
+// ── Issue Templates ──────────────────────────────────────
+function renderTemplates() {
+    const templates = configData.issue_templates || {};
+    const container = document.getElementById('templates-list');
+    const keys = Object.keys(templates).sort();
+    container.innerHTML = keys.map(k => {
+        const t = templates[k];
+        return `
+        <div class="issue-row">
+            <div class="issue-key">${esc(k)}</div>
+            <div class="issue-fields">
+                <input type="text" class="tpl-title" data-key="${esc(k)}" value="${esc(t.title)}" placeholder="Title ({count})">
+                <textarea class="tpl-desc" data-key="${esc(k)}" placeholder="Description">${esc(t.description)}</textarea>
+                <select class="tpl-priority" data-key="${esc(k)}">
+                    <option value="high" ${t.priority==='high'?'selected':''}>High</option>
+                    <option value="normal" ${t.priority==='normal'?'selected':''}>Normal</option>
+                    <option value="low" ${t.priority==='low'?'selected':''}>Low</option>
+                </select>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function saveTemplates() {
+    const templates = {};
+    document.querySelectorAll('.issue-row').forEach(row => {
+        const key = row.querySelector('.issue-key').textContent;
+        templates[key] = {
+            title: row.querySelector('.tpl-title').value,
+            description: row.querySelector('.tpl-desc').value,
+            priority: row.querySelector('.tpl-priority').value,
+        };
+    });
+    try {
+        await putConfig('issue_templates', templates);
+        toast('Issue templates saved', 'success');
+    } catch (e) { toast('Save failed', 'error'); }
+}
+
+// ── Helpers ──────────────────────────────────────────────
+function esc(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function putConfig(key, value) {
+    const res = await fetch(`/api/admin/config/${key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value }),
+    });
+    if (!res.ok) throw new Error(`PUT ${key} failed`);
+    return res.json();
+}
+
+async function resetConfig(key) {
+    await fetch(`/api/admin/config/${key}`, { method: 'DELETE' });
+}
+
+// ── Cleanup Operations ───────────────────────────────────
+let cleanupData = null;
+let sfInstanceUrl = '';
+
+const PARDOT_TYPE_MAP = {
+    'form': 'form', 'landing-page': 'landingPage', 'Campaign': 'campaign',
+    'list': 'list', 'email': 'listEmail', 'custom-redirect': 'customRedirect',
+};
+
+const ISSUE_LABELS = {
+    campaigns_empty: 'Empty campaigns',
+    campaigns_no_sf: 'Campaigns missing SF link',
+    campaigns_dormant: 'Dormant campaigns',
+    forms_no_campaign: 'Forms without campaign',
+    forms_dormant: 'Dormant forms',
+    forms_errors: 'Forms with errors',
+    lps_no_campaign: 'Landing pages without campaign',
+    lps_dormant: 'Dormant landing pages',
+    lists_stale_1y: 'Lists stale > 1 year',
+    lists_stale: 'Lists stale 6-12 months',
+    lists_unnamed: 'Unnamed lists',
+    emails_no_campaign: 'Emails without campaign',
+    emails_no_subject: 'Emails missing subject',
+    redirects_no_campaign: 'Redirects without campaign',
+};
+
+async function loadCleanup() {
+    try {
+        const [statusRes, cfgRes] = await Promise.all([
+            fetch('/api/v1/pardot/cleanup/status'),
+            fetch('/api/v1/pardot/config'),
+        ]);
+        cleanupData = await statusRes.json();
+        const appCfg = await cfgRes.json();
+        sfInstanceUrl = appCfg.sf_instance_url || '';
+        renderCleanup();
+    } catch (e) {
+        document.getElementById('cleanup-content').textContent = 'Failed to load cleanup status.';
+    }
+}
+
+function renderCleanup() {
+    const el = document.getElementById('cleanup-content');
+    if (!cleanupData) { el.textContent = ''; return; }
+
+    if (!cleanupData.configured) {
+        renderCleanupSetup(el);
+        return;
+    }
+
+    // Build DOM programmatically
+    el.textContent = '';
+
+    // Config row
+    const configRow = document.createElement('div');
+    configRow.style.cssText = 'display:flex; gap:1rem; align-items:end; flex-wrap:wrap; margin-bottom:1.2rem;';
+
+    const prefixDiv = document.createElement('div');
+    const prefixLabel = document.createElement('label');
+    prefixLabel.style.cssText = 'font-size:0.75rem; font-weight:700; color:var(--forest); display:block; margin-bottom:0.15rem;';
+    prefixLabel.textContent = 'Tag Prefix';
+    const prefixInput = document.createElement('input');
+    prefixInput.type = 'text';
+    prefixInput.id = 'cleanup-prefix';
+    prefixInput.value = cleanupData.tag_prefix;
+    prefixInput.style.width = '120px';
+    prefixDiv.appendChild(prefixLabel);
+    prefixDiv.appendChild(prefixInput);
+
+    const actionsDiv = document.createElement('div');
+    const actionsLabel = document.createElement('label');
+    actionsLabel.style.cssText = 'font-size:0.75rem; font-weight:700; color:var(--forest); display:block; margin-bottom:0.15rem;';
+    actionsLabel.textContent = 'Actions (comma-separated)';
+    const actionsInput = document.createElement('input');
+    actionsInput.type = 'text';
+    actionsInput.id = 'cleanup-actions';
+    actionsInput.value = Object.keys(cleanupData.actions).join(', ');
+    actionsInput.style.width = '250px';
+    actionsDiv.appendChild(actionsLabel);
+    actionsDiv.appendChild(actionsInput);
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-primary btn-sm';
+    saveBtn.textContent = 'Save Config';
+    saveBtn.onclick = saveCleanupConfig;
+
+    const setupBtn = document.createElement('button');
+    setupBtn.className = 'btn btn-secondary btn-sm';
+    setupBtn.id = 'setup-tags-btn';
+    setupBtn.textContent = 'Create Tags in Pardot';
+    setupBtn.onclick = setupCleanupTags;
+
+    configRow.append(prefixDiv, actionsDiv, saveBtn, setupBtn);
+    el.appendChild(configRow);
+
+    // Progress overview
+    const progressEntries = Object.entries(cleanupData.progress || {})
+        .sort((a, b) => b[1].total - a[1].total);
+
+    if (progressEntries.length > 0) {
+        const h3 = document.createElement('h3');
+        h3.style.cssText = 'font-size:0.9rem; font-weight:700; color:var(--forest); margin-bottom:0.6rem;';
+        h3.textContent = 'Triage Progress';
+        el.appendChild(h3);
+        for (const [key, p] of progressEntries) {
+            const row = document.createElement('div');
+            row.className = 'progress-row';
+            const lbl = document.createElement('span');
+            lbl.className = 'label';
+            lbl.textContent = ISSUE_LABELS[key] || key;
+            const bar = document.createElement('div');
+            bar.className = 'progress-bar';
+            const fill = document.createElement('div');
+            fill.className = 'progress-fill';
+            fill.style.width = p.pct + '%';
+            bar.appendChild(fill);
+            const txt = document.createElement('span');
+            txt.className = 'progress-text';
+            txt.textContent = `${p.tagged} / ${p.total} (${p.pct}%)`;
+            row.append(lbl, bar, txt);
+            el.appendChild(row);
+        }
+    } else {
+        const noProgress = document.createElement('p');
+        noProgress.style.cssText = 'font-size:0.85rem; color:#999; margin-bottom:1rem;';
+        noProgress.textContent = 'No flagged assets have been tagged yet. Tag assets in Pardot with the cleanup tags, then re-sync.';
+        el.appendChild(noProgress);
+    }
+
+    // Queue by action
+    const queueH3 = document.createElement('h3');
+    queueH3.style.cssText = 'font-size:0.9rem; font-weight:700; color:var(--forest); margin:1.2rem 0 0.6rem;';
+    queueH3.textContent = 'Queue by Action';
+    el.appendChild(queueH3);
+
+    for (const [action, data] of Object.entries(cleanupData.actions)) {
+        const group = document.createElement('div');
+        group.className = 'cleanup-queue-group';
+        const heading = document.createElement('h4');
+        const headingText = document.createTextNode(action + ' ');
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = data.total || 0;
+        heading.append(headingText, badge, document.createTextNode(' \u25BC'));
+        const content = document.createElement('div');
+        if (data.total === 0) content.className = 'hidden';
+        heading.onclick = function() { content.classList.toggle('hidden'); };
+
+        if (data.total === 0) {
+            const p = document.createElement('p');
+            p.style.cssText = 'font-size:0.8rem; color:#999; padding-left:0.5rem;';
+            p.textContent = 'No items tagged.';
+            content.appendChild(p);
+        } else {
+            const table = document.createElement('table');
+            table.className = 'cleanup-queue-table';
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            ['Type', 'Name', 'Link'].forEach(t => {
+                const th = document.createElement('th');
+                th.textContent = t;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            const tbody = document.createElement('tbody');
+            // Group by type
+            const byType = {};
+            for (const item of data.items) {
+                const t = item.object_type || 'unknown';
+                if (!byType[t]) byType[t] = [];
+                byType[t].push(item);
+            }
+            for (const [objType, items] of Object.entries(byType)) {
+                for (const item of items) {
+                    const tr = document.createElement('tr');
+                    const tdType = document.createElement('td');
+                    tdType.textContent = objType;
+                    const tdName = document.createElement('td');
+                    tdName.textContent = item.name || '(unnamed)';
+                    const tdLink = document.createElement('td');
+                    const pardotType = PARDOT_TYPE_MAP[objType] || objType;
+                    if (sfInstanceUrl) {
+                        const a = document.createElement('a');
+                        a.href = sfInstanceUrl + '/lightning/page/pardot/prospect?pardot__path=%2F' + pardotType + '%2Fread%2Fid%2F' + item.object_id;
+                        a.target = '_blank';
+                        a.textContent = 'Open in Pardot';
+                        tdLink.appendChild(a);
+                    } else {
+                        tdLink.textContent = '\u2014';
+                    }
+                    tr.append(tdType, tdName, tdLink);
+                    tbody.appendChild(tr);
+                }
+            }
+            table.appendChild(tbody);
+            content.appendChild(table);
+        }
+        group.append(heading, content);
+        el.appendChild(group);
+    }
+
+    // Instructions callout
+    const callout = document.createElement('div');
+    callout.className = 'callout';
+    const calloutTitle = document.createElement('strong');
+    calloutTitle.textContent = 'How to execute cleanup in Pardot:';
+    const calloutList = document.createElement('ol');
+    [
+        'In Pardot, navigate to the asset type (e.g., Marketing > Campaigns)',
+        'Filter by tag: select the cleanup tag (e.g., "Camp: Remove")',
+        'Select all filtered results using the checkbox',
+        'Use Table Actions to Archive, Delete, or modify in bulk',
+        'Re-run python camp.py to sync changes back',
+    ].forEach(step => {
+        const li = document.createElement('li');
+        li.textContent = step;
+        calloutList.appendChild(li);
+    });
+    const calloutNote = document.createElement('p');
+    calloutNote.style.cssText = 'margin-top:0.4rem; font-size:0.78rem; color:#999;';
+    calloutNote.textContent = 'Note: The Pardot API cannot archive or delete most asset types directly. These operations must be performed in the Pardot UI.';
+    callout.append(calloutTitle, calloutList, calloutNote);
+    el.appendChild(callout);
+}
+
+function renderCleanupSetup(el) {
+    el.textContent = '';
+    const prefix = cleanupData.tag_prefix || 'Camp: ';
+    const defaultActions = configData.cleanup_actions || ['Remove', 'Archive', 'Reviewed'];
+
+    const panel = document.createElement('div');
+    panel.className = 'setup-panel';
+
+    const desc = document.createElement('p');
+    desc.textContent = 'Create cleanup tags in Pardot so the team can start triaging assets. The following tags will be created:';
+    panel.appendChild(desc);
+
+    const tagPreview = document.createElement('div');
+    tagPreview.style.marginBottom = '1rem';
+    defaultActions.forEach(a => {
+        const span = document.createElement('span');
+        span.className = 'tag-preview';
+        span.textContent = prefix + a;
+        tagPreview.appendChild(span);
+    });
+    panel.appendChild(tagPreview);
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.id = 'setup-tags-btn';
+    btn.textContent = 'Create Tags in Pardot';
+    btn.onclick = setupCleanupTags;
+    panel.appendChild(btn);
+
+    const note = document.createElement('p');
+    note.style.cssText = 'font-size:0.78rem; color:#999; margin-top:0.8rem;';
+    note.textContent = 'After creating, team members tag assets in Pardot\'s UI. Run python camp.py to sync tags back.';
+    panel.appendChild(note);
+
+    el.appendChild(panel);
+}
+
+async function setupCleanupTags() {
+    const btn = document.getElementById('setup-tags-btn');
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+    try {
+        const res = await fetch('/api/v1/pardot/cleanup/setup', { method: 'POST' });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const msg = [];
+        if (data.created.length) msg.push('Created: ' + data.created.join(', '));
+        if (data.skipped.length) msg.push('Already existed: ' + data.skipped.join(', '));
+        toast(msg.join('. ') || 'Tags ready', 'success');
+        await loadCleanup();
+    } catch (e) {
+        toast('Failed to create tags \u2014 check Pardot API connection', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create Tags in Pardot';
+    }
+}
+
+async function saveCleanupConfig() {
+    const prefix = document.getElementById('cleanup-prefix').value.trim();
+    const actionsStr = document.getElementById('cleanup-actions').value;
+    const actions = actionsStr.split(',').map(s => s.trim()).filter(Boolean);
+    if (!prefix || !actions.length) { toast('Prefix and at least one action required', 'error'); return; }
+    try {
+        await putConfig('cleanup_tag_prefix', prefix);
+        await putConfig('cleanup_actions', actions);
+        toast('Cleanup config saved', 'success');
+        await loadCleanup();
+    } catch (e) { toast('Save failed', 'error'); }
+}
+
+// ── Init ─────────────────────────────────────────────────
+loadConfig();
+loadTeam();
+loadCleanup();
+</script>
+</body>
+</html>

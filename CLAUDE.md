@@ -53,6 +53,7 @@ python manage.py sync_accounts --forcedelete # reset and resync
 - **`db/`** — Local PostgreSQL models (Account, Book, Contact, Opportunity, Adoption) that mirror Salesforce objects
 - **`sf/`** — Salesforce ORM models (`sf/models/`) and management commands for data sync (`sf/management/commands/`)
 - **`users/`** — Custom Django user model with OpenStax Accounts integration
+- **`pardot/`** — Pardot/Account Engagement data health tracker ("Camp Campaign"). Dashboard, health scoring, asset audits, prospect sync monitoring. See [Pardot App](#pardot-app-camp-campaign) below.
 - **`sfapi/`** — Django project config. Settings in `sfapi/settings/base.py` with optional `local.py` override
 
 ### Key Data Flow
@@ -93,6 +94,46 @@ Settings auto-detect environment from CLI args: `test` in argv → test mode, `r
 
 ### API Versioning
 All v1 endpoints live in `api/api_v1.py`. Breaking changes require a new `api_v2.py` — never exceed `1.x.x` in the existing file.
+
+## Pardot App (Camp Campaign)
+
+The `pardot/` app is a Pardot/Salesforce data health tracker with a camp-themed dashboard. It syncs marketing assets and health metrics from the Pardot API v5 and Salesforce SOQL into local PostgreSQL tables, then serves a dashboard and JSON API for monitoring data quality.
+
+### Pardot Commands
+
+```bash
+# Tier 1: Sync assets + SF health (~20 API calls)
+python manage.py camp_sync
+
+# Tier 2: + top 500 prospects by score
+python manage.py camp_sync --scout
+
+# Tier 3: Full prospect + activity sync (~2500+ calls, prompts for confirmation)
+python manage.py camp_sync --survey
+python manage.py camp_sync --survey --full          # Force full re-sync
+
+# Selective sync
+python manage.py camp_sync --entities forms,lists
+python manage.py camp_sync --entities sf_health
+python manage.py camp_sync --entities assets         # All 9 asset types
+```
+
+### Pardot Architecture
+
+- **Dashboard**: `/pardot/` (camp-themed, SSO + SuperUser required). Admin settings at `/pardot/admin-settings/`.
+- **API**: 29 JSON endpoints under `/api/v1/pardot/` (briefing, engagement, assets, campaigns, tags, health-score, issues, tasks, etc.). All require SuperUser auth.
+- **Config**: Managed via Django admin (`/admin/pardot/`). Team roster, demerit weights, grade thresholds, issue templates, camp dates — all DB-backed with hardcoded defaults.
+- **Auth**: Pardot API v5 reuses the existing `django-salesforce` connection's OAuth token. The only Pardot-specific setting is `SALESFORCE_PARDOT_BUSINESS_UNIT`. SOQL queries also piggyback on the same connection.
+- **DB compatibility**: `pardot/db_compat.py` provides a `get_cursor()` that wraps Django's `connection.cursor()` with dict-row support and automatic table name remapping (`prospects` → `pardot_prospects`). This lets the complex raw SQL queries (LATERAL JOINs, dynamic upserts) work unchanged from the original standalone app.
+- **Models**: 21 Django models with `pardot_` table prefixes. Business logic uses a mix of ORM (tasks, config, team) and raw SQL via `db_compat.get_cursor()` (audit queries, sync upserts, scorecard).
+
+### Pardot Settings (in `.env`)
+
+```
+SALESFORCE_PARDOT_BUSINESS_UNIT=<Pardot Business Unit ID>
+```
+
+All other auth (client ID, secret, username, password) comes from the existing `SALESFORCE_*` database config.
 
 ## Test Configuration
 
