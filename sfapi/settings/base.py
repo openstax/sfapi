@@ -119,9 +119,6 @@ CRONTAB_LOCK_JOBS = os.getenv("CRONTAB_LOCK_JOBS") != "False"
 AUTH_USER_MODEL = "users.User"
 LOGIN_URL = "/admin/login/"
 
-# Append trailing slash to URLs for the healthcheck middleware
-APPEND_SLASH = True
-
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
