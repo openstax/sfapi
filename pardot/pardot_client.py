@@ -26,7 +26,9 @@ def _get_sf_token() -> str:
 
     sf_conn = connections["salesforce"]
     sf_conn.ensure_connection()
-    return sf_conn.sf_session.auth.get_token()
+    token = sf_conn.sf_session.auth.get_token()
+    log.debug("Obtained SF access token (length=%d)", len(token) if token else 0)
+    return token
 
 
 def _get_sf_instance_url() -> str:
@@ -35,7 +37,9 @@ def _get_sf_instance_url() -> str:
 
     sf_conn = connections["salesforce"]
     sf_conn.ensure_connection()
-    return sf_conn.sf_auth.instance_url
+    instance_url = sf_conn.sf_session.auth.instance_url
+    log.debug("SF instance URL: %s", instance_url)
+    return instance_url
 
 
 class PardotAPIError(Exception):
@@ -225,6 +229,7 @@ def get_sf_client():
     sf_conn = connections["salesforce"]
     sf_conn.ensure_connection()
     sf_session = sf_conn.sf_session
-    instance_url = sf_conn.sf_auth.instance_url
+    instance_url = sf_session.auth.instance_url
 
+    log.debug("Creating simple-salesforce client for %s", instance_url)
     return Salesforce(instance_url=instance_url, session_id=sf_session.auth.get_token())

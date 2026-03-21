@@ -72,8 +72,8 @@ def get_sf_api_usage():
         connection = db.connection
 
         # Get instance URL and session from the SF connection
-        instance_url = connection.sf_auth.instance_url
         session = db.sf_session
+        instance_url = session.auth.instance_url
 
         from salesforce.auth import API_VERSION
 

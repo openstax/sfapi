@@ -32,15 +32,21 @@ class Command(BaseCommand):
         parser.add_argument("--debug", action="store_true", help="Debug logging")
 
     def handle(self, *args, **options):
-        if options["debug"]:
-            logging.basicConfig(level=logging.DEBUG)
-        else:
-            logging.basicConfig(level=logging.INFO)
+        level = logging.DEBUG if options["debug"] else logging.INFO
+        logging.basicConfig(level=level)
+        # Ensure camp loggers respect --debug
+        for name in ("camp.sync", "camp.pardot_client"):
+            logging.getLogger(name).setLevel(level)
 
         from pardot.pardot_client import PardotClient, get_sf_client
         from pardot.sync import SyncEngine
 
+        log.info("Initializing Pardot client...")
         pardot = PardotClient()
+        log.info(
+            "Pardot client ready (business_unit=%s)",
+            pardot.business_unit_id or "<NOT SET>",
+        )
         conn = None  # Django manages connections
 
         # Selective sync
@@ -63,18 +69,24 @@ class Command(BaseCommand):
                 "campaign_members",
             }
             if any(e in sf_entities for e in entities):
+                log.info("Connecting to Salesforce for SF entities...")
                 sf = get_sf_client()
+                log.info("Salesforce client ready.")
 
             engine = SyncEngine(pardot, conn)
             for entity in entities:
                 try:
+                    log.info("Syncing entity: %s", entity)
                     count = engine.sync_one(entity, force_full=options["full"], sf=sf, days=options["days"])
                     self.stdout.write(f"  {entity}: {count} records")
                 except Exception as e:
+                    log.exception("Failed to sync entity %s", entity)
                     self.stderr.write(f"  {entity}: FAILED — {e}")
             return
 
+        log.info("Connecting to Salesforce...")
         sf = get_sf_client()
+        log.info("Salesforce client ready.")
         engine = SyncEngine(pardot, conn)
 
         # Tier 3: Full Survey
