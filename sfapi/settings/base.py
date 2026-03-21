@@ -63,7 +63,11 @@ if DEBUG:
     ALLOWED_HOSTS = ["*"]
 else:
     # All non-local and non-prod environments
-    ALLOWED_HOSTS = [f"{ENVIRONMENT}.salesforce.openstax.org", f"{ENVIRONMENT}.salesforce.sandbox.openstax.org"]
+    ALLOWED_HOSTS = [
+        f"{ENVIRONMENT}.salesforce.openstax.org",
+        f"{ENVIRONMENT}.salesforce.sandbox.openstax.org",
+        "localhost",
+    ]  # allow localhost for ELB health checks
     if ENVIRONMENT == "prod":
         # Prod only
         ALLOWED_HOSTS = ["salesforce.openstax.org"]
@@ -106,6 +110,21 @@ CRONJOBS = [
     ("45 23 * * 6", "django.core.management.call_command", ["sync_books"]),  # books every Saturday at 11:45pm
     ("0 5 * * *", "django.core.management.call_command", ["sync_all"]),  # full chain daily at 5am
     ("0 3 * * 0", "django.core.management.call_command", ["cleanup_logs"]),  # clean up audit logs every Sunday at 3am
+    (
+        "0 6 * * *",
+        "django.core.management.call_command",
+        ["sync_pardot"],
+    ),  # pardot tier 1 (assets + SF health, ~20 calls) daily at 6am
+    (
+        "30 6 * * 3",
+        "django.core.management.call_command",
+        ["sync_pardot", "--scout"],
+    ),  # pardot tier 2 (+ prospects, ~25 calls) weekly Wed at 6:30am
+    (
+        "0 7 1 * *",
+        "django.core.management.call_command",
+        ["sync_pardot", "--survey", "--full"],
+    ),  # pardot tier 3 (full sync, ~2500+ calls) monthly 1st at 7am
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
@@ -119,7 +138,7 @@ CRONTAB_LOCK_JOBS = os.getenv("CRONTAB_LOCK_JOBS") != "False"
 AUTH_USER_MODEL = "users.User"
 LOGIN_URL = "/admin/login/"
 
-APPEND_SLASH = False
+APPEND_SLASH = True
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

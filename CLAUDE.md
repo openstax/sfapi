@@ -88,6 +88,9 @@ python manage.py sync_accounts --forcedelete # reset and resync
 - `sync_all` — daily at 5:00 AM (accounts → contacts → opportunities → adoptions)
 - `sync_books` — weekly Saturday at 11:45 PM
 - `cleanup_logs` — weekly Sunday at 3:00 AM
+- `sync_pardot` — daily at 6:00 AM (Tier 1: assets + SF health, ~20 API calls)
+- `sync_pardot --scout` — weekly Wednesday at 6:30 AM (Tier 2: + top prospects, ~25 calls)
+- `sync_pardot --survey --full` — monthly 1st at 7:00 AM (Tier 3: full prospect + activity sync, ~2500+ calls)
 
 ### Environment Detection
 Settings auto-detect environment from CLI args: `test` in argv → test mode, `runserver` in argv → local mode. The `ENVIRONMENT` env var controls deployed environments (dev, staging, prod). Local mode uses dummy cache (no Redis needed).
@@ -103,19 +106,19 @@ The `pardot/` app is a Pardot/Salesforce data health tracker with a camp-themed 
 
 ```bash
 # Tier 1: Sync assets + SF health (~20 API calls)
-python manage.py camp_sync
+python manage.py sync_pardot
 
 # Tier 2: + top 500 prospects by score
-python manage.py camp_sync --scout
+python manage.py sync_pardot --scout
 
 # Tier 3: Full prospect + activity sync (~2500+ calls, prompts for confirmation)
-python manage.py camp_sync --survey
-python manage.py camp_sync --survey --full          # Force full re-sync
+python manage.py sync_pardot --survey
+python manage.py sync_pardot --survey --full          # Force full re-sync
 
 # Selective sync
-python manage.py camp_sync --entities forms,lists
-python manage.py camp_sync --entities sf_health
-python manage.py camp_sync --entities assets         # All 9 asset types
+python manage.py sync_pardot --entities forms,lists
+python manage.py sync_pardot --entities sf_health
+python manage.py sync_pardot --entities assets         # All 9 asset types
 ```
 
 ### Pardot Architecture

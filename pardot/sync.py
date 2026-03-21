@@ -1095,8 +1095,9 @@ class SyncEngine:
         if not rows:
             return
         cols = list(rows[0].keys())
-        placeholders = ", ".join(["%s"] * len(cols))
-        col_names = ", ".join(cols)
+        all_cols = cols + ["cached_at"]
+        placeholders = ", ".join(["%s"] * len(cols)) + ", NOW()"
+        col_names = ", ".join(all_cols)
         updates = ", ".join(f"{c} = EXCLUDED.{c}" for c in cols if c != "id")
         sql = f"""
             INSERT INTO {table} ({col_names})

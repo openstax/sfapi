@@ -148,10 +148,10 @@ The `pardot` app provides a marketing data health tracker for Pardot/Account Eng
 
 **Sync commands**:
 ```sh
-python manage.py camp_sync              # Tier 1: assets + SF health (~20 API calls)
-python manage.py camp_sync --scout      # Tier 2: + top 500 prospects
-python manage.py camp_sync --survey     # Tier 3: full prospect + activity sync
-python manage.py camp_sync --entities forms,lists   # Selective sync
+python manage.py sync_pardot              # Tier 1: assets + SF health (~20 API calls)
+python manage.py sync_pardot --scout      # Tier 2: + top 500 prospects
+python manage.py sync_pardot --survey     # Tier 3: full prospect + activity sync
+python manage.py sync_pardot --entities forms,lists   # Selective sync
 ```
 
 **Configuration**: Team roster, demerit weights, grade thresholds, and issue templates are managed via Django admin at `/admin/pardot/`.

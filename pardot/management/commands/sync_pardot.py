@@ -1,14 +1,14 @@
 """
-Django management command for Camp Campaign sync operations.
+Django management command for Pardot/SF data sync operations.
 
 Usage:
-    manage.py camp_sync                         # Tier 1: assets + SF health
-    manage.py camp_sync --scout                 # Tier 2: + top prospects
-    manage.py camp_sync --survey                # Tier 3: full sync (prompts)
-    manage.py camp_sync --entities forms,lists  # Selective sync
-    manage.py camp_sync --entities sf_health    # Just SF health
-    manage.py camp_sync --full                  # Force full re-sync
-    manage.py camp_sync --days 7               # Activity window
+    manage.py sync_pardot                         # Tier 1: assets + SF health
+    manage.py sync_pardot --scout                 # Tier 2: + top prospects
+    manage.py sync_pardot --survey                # Tier 3: full sync (prompts)
+    manage.py sync_pardot --entities forms,lists  # Selective sync
+    manage.py sync_pardot --entities sf_health    # Just SF health
+    manage.py sync_pardot --full                  # Force full re-sync
+    manage.py sync_pardot --days 7               # Activity window
 """
 
 import logging
