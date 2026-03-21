@@ -10,7 +10,7 @@ django-openstax-accounts==1.1.2
 django-openstax-healthcheck==1.0
 psycopg2==2.9.11
 PyJWE==1.0.0
-PyJWT==2.10.1
+PyJWT==2.12.0
 python-dotenv==1.2.1
 sentry-sdk==2.49.0
 simple_salesforce==1.12.5

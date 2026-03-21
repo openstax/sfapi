@@ -70,6 +70,10 @@ class BulkSyncTest(TestCase):
         acct.sheer_id_school_name = None
         acct.ipeds_id = None
         acct.nces_id = None
+        acct.assignable_status = None
+        acct.assignable_maturity_score = None
+        acct.assignments_created = None
+        acct.assignments_completed = None
         return acct
 
     def test_bulk_create_accounts(self):
