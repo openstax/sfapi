@@ -69,7 +69,6 @@ def get_sf_api_usage():
     try:
         db = connections["salesforce"]
         db.ensure_connection()
-        connection = db.connection
 
         # Get instance URL and session from the SF connection
         session = db.sf_session
