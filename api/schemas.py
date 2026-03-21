@@ -47,6 +47,13 @@ class AccountSchema(Schema):
     sheer_id_school_name: Optional[str]
 
 
+class AccountDetailSchema(AccountSchema):
+    assignable_status: Optional[str] = None
+    assignable_maturity_score: Optional[int] = None
+    assignments_created: Optional[int] = None
+    assignments_completed: Optional[int] = None
+
+
 class AccountsSchema(Schema):
     count: int
     total_schools: int

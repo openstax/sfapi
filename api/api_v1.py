@@ -18,6 +18,7 @@ from openstax_accounts.functions import decrypt_cookie, get_logged_in_user_uuid,
 
 from api.models import SuperUser
 from db.models import Account, Adoption, Book, Contact
+from pardot.views import router as pardot_router
 from sf.models.case import Case
 
 from .auth import combined_auth, has_scope
@@ -25,6 +26,7 @@ from .forms.pipeline import FormPipeline
 from .forms.processors import process_submission
 from .models import FormSubmission
 from .schemas import (
+    AccountDetailSchema,
     AccountsSchema,
     AdoptionsSchema,
     BooksSchema,
@@ -411,6 +413,35 @@ def salesforce_schools(request, name: str = None):
     return response_json
 
 
+@router.get(
+    "/schools/{school_id}",
+    auth=combined_auth,
+    response={200: AccountDetailSchema, possible_error_codes: ErrorSchema},
+    tags=["core"],
+)
+@throttle(SalesforceAPIRateThrottle)
+def salesforce_school_detail(request, school_id: str):
+    try:
+        school = Account.objects.get(id=school_id)
+    except Account.DoesNotExist:
+        return 404, {"code": 404, "detail": "School not found."}
+
+    return {
+        "id": school.id,
+        "name": school.name,
+        "type": school.type,
+        "country": school.country,
+        "state": school.state,
+        "city": school.city,
+        "lms": school.lms,
+        "sheer_id_school_name": school.sheer_id_school_name,
+        "assignable_status": school.assignable_status,
+        "assignable_maturity_score": school.assignable_maturity_score,
+        "assignments_created": school.assignments_created,
+        "assignments_completed": school.assignments_completed,
+    }
+
+
 @router.post(
     "/case", auth=combined_auth, response={200: CaseSchema, possible_error_codes: ErrorSchema}, tags=["support"]
 )
@@ -604,6 +635,4 @@ def info(request):
 api.add_router("", router)
 
 # Pardot data health tracker (Camp Campaign dashboard)
-from pardot.views import router as pardot_router
-
 api.add_router("/pardot", pardot_router)

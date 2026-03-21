@@ -24,6 +24,10 @@ ACCOUNT_SYNC_FIELDS = [
     "sheer_id_school_name",
     "ipeds_id",
     "nces_id",
+    "assignable_status",
+    "assignable_maturity_score",
+    "assignments_created",
+    "assignments_completed",
 ]
 
 CONTACT_SYNC_FIELDS = [
@@ -134,6 +138,10 @@ def update_or_create_accounts(salesforce_accounts, full_sync=False):
                 sheer_id_school_name=account.sheer_id_school_name,
                 ipeds_id=account.ipeds_id,
                 nces_id=account.nces_id,
+                assignable_status=account.assignable_status,
+                assignable_maturity_score=account.assignable_maturity_score,
+                assignments_created=account.assignments_created,
+                assignments_completed=account.assignments_completed,
                 is_deleted=False,
             )
         )

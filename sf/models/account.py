@@ -71,6 +71,33 @@ class Account(models.SalesforceModel):
         db_column="NCES_District_ID2__c", max_length=1300, sf_read_only=models.READ_ONLY, blank=True, null=True
     )
     nces_id = models.CharField(db_column="NCESID__c", max_length=255, verbose_name="NCESID", blank=True, null=True)
+    assignable_status = models.CharField(
+        db_column="Assignable_Status__c", max_length=255, verbose_name="Assignable Status", blank=True, null=True
+    )
+    assignable_maturity_score = models.DecimalField(
+        db_column="Assignable_Maturity_Score__c",
+        max_digits=5,
+        decimal_places=0,
+        verbose_name="Assignable Maturity Score",
+        blank=True,
+        null=True,
+    )
+    assignments_created = models.DecimalField(
+        db_column="Assignments_Created__c",
+        max_digits=18,
+        decimal_places=0,
+        verbose_name="Assignments Created",
+        blank=True,
+        null=True,
+    )
+    assignments_completed = models.DecimalField(
+        db_column="Assignments_Completed__c",
+        max_digits=18,
+        decimal_places=0,
+        verbose_name="Assignments Completed",
+        blank=True,
+        null=True,
+    )
 
     class Meta(models.Model.Meta):
         db_table = "Account"
