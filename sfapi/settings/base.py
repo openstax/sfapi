@@ -119,6 +119,8 @@ CRONTAB_LOCK_JOBS = os.getenv("CRONTAB_LOCK_JOBS") != "False"
 AUTH_USER_MODEL = "users.User"
 LOGIN_URL = "/admin/login/"
 
+APPEND_SLASH = False
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
