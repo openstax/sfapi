@@ -138,7 +138,7 @@ def api_briefing(request):
     try:
         hs = compute_health_score(conn)
     except Exception:
-        pass
+        log.debug("Health score computation failed")
 
     return {
         "date": date.today().isoformat(),
@@ -435,7 +435,7 @@ def api_tasks_update(request, task_id: int):
         sets.append("completed_at = NOW()")
     params.append(task_id)
     with get_cursor() as cur:
-        cur.execute(f"UPDATE tasks SET {', '.join(sets)} WHERE id = %s RETURNING *", params)
+        cur.execute(f"UPDATE tasks SET {', '.join(sets)} WHERE id = %s RETURNING *", params)  # noqa: S608
         row = cur.fetchone()
     if not row:
         return JsonResponse({"error": "task not found"}, status=404)
@@ -489,7 +489,7 @@ def api_issue_create_task(request, key: str):
         data = json.loads(request.body)
         assignee = data.get("assignee", assignee)
     except Exception:
-        pass
+        log.debug("Could not parse request body for assignee")
     with get_cursor() as cur:
         cur.execute(
             """

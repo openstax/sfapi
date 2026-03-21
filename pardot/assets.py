@@ -208,7 +208,7 @@ def get_asset_overview(conn) -> dict:
 
     with get_cursor(conn) as cur:
         for key, table in tables.items():
-            cur.execute(f"SELECT COUNT(*) AS n FROM {table}")
+            cur.execute(f"SELECT COUNT(*) AS n FROM {table}")  # noqa: S608
             count = cur.fetchone()["n"]
 
             cur.execute(f"""
@@ -216,7 +216,7 @@ def get_asset_overview(conn) -> dict:
                 FROM {table}
                 ORDER BY COALESCE(updated_at, created_at) DESC NULLS LAST
                 LIMIT 10
-            """)
+            """)  # noqa: S608
             recent = [dict(row) for row in cur.fetchall()]
 
             overview[key] = {"count": count, "recent": recent}
@@ -229,7 +229,7 @@ def get_asset_summary(conn) -> dict:
     with get_cursor(conn) as cur:
         counts = {}
         for table in ["campaigns", "lists", "forms", "landing_pages", "list_emails", "custom_redirects"]:
-            cur.execute(f"SELECT COUNT(*) AS n FROM {table}")
+            cur.execute(f"SELECT COUNT(*) AS n FROM {table}")  # noqa: S608
             counts[table] = cur.fetchone()["n"]
     return counts
 
@@ -705,7 +705,7 @@ def get_campaign_connectivity(conn) -> dict:
             for r in cur.fetchall():
                 member_counts[r["campaign_sf_id"]] = dict(r)
         except Exception:
-            pass  # Table may not exist yet on first run
+            log.debug("campaign_member_counts table may not exist yet")
 
         for c in campaigns.values():
             sf_id = c.get("salesforce_id")
@@ -773,7 +773,7 @@ def get_campaign_connectivity(conn) -> dict:
             cur.execute("SELECT id, name FROM folders")
             folder_map = {r["id"]: r["name"] for r in cur.fetchall()}
         except Exception:
-            pass
+            log.debug("folders table may not exist yet")
 
         return {
             "summary": summary,
@@ -929,7 +929,7 @@ def get_cleanup_status(conn) -> dict:
         for table, ids in ids_by_table.items():
             if not ids:
                 continue
-            cur.execute(f"SELECT id, name FROM {table} WHERE id = ANY(%s)", (list(ids),))
+            cur.execute(f"SELECT id, name FROM {table} WHERE id = ANY(%s)", (list(ids),))  # noqa: S608
             for r in cur.fetchall():
                 name_lookup[(table, r["id"])] = r["name"]
 

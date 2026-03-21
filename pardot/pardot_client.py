@@ -26,7 +26,7 @@ def _get_sf_token() -> str:
 
     sf_conn = connections["salesforce"]
     sf_conn.ensure_connection()
-    token = sf_conn.sf_session.auth.get_auth()['access_token']
+    token = sf_conn.sf_session.auth.get_auth()["access_token"]
     log.debug("Obtained SF access token (length=%d)", len(token) if token else 0)
     return token
 
@@ -232,4 +232,4 @@ def get_sf_client():
     instance_url = sf_session.auth.instance_url
 
     log.debug("Creating simple-salesforce client for %s", instance_url)
-    return Salesforce(instance_url=instance_url, session_id=sf_session.auth.get_auth()['access_token'])
+    return Salesforce(instance_url=instance_url, session_id=sf_session.auth.get_auth()["access_token"])

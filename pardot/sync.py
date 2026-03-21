@@ -246,7 +246,7 @@ class SyncEngine:
             batch = sf_ids[i : i + 200]
             id_list = "','".join(batch)
             soql = (
-                f"SELECT Id, CreatedDate, LastModifiedDate, StartDate, EndDate FROM Campaign WHERE Id IN ('{id_list}')"
+                f"SELECT Id, CreatedDate, LastModifiedDate, StartDate, EndDate FROM Campaign WHERE Id IN ('{id_list}')"  # noqa: S608
             )
             try:
                 result = sf.query_all(soql)
@@ -324,10 +324,7 @@ class SyncEngine:
         for i in range(0, len(lead_ids), 200):
             batch = lead_ids[i : i + 200]
             id_list = "','".join(batch)
-            soql = (
-                f"SELECT pi__Lead__c, pi__Scoring_Category_Name__c, pi__Score__c "
-                f"FROM pi__Category_Lead_Score__c WHERE pi__Lead__c IN ('{id_list}')"
-            )
+            soql = f"SELECT pi__Lead__c, pi__Scoring_Category_Name__c, pi__Score__c FROM pi__Category_Lead_Score__c WHERE pi__Lead__c IN ('{id_list}')"  # noqa: S608
             try:
                 result = sf.query_all(soql)
             except Exception as e:
@@ -359,10 +356,7 @@ class SyncEngine:
         for i in range(0, len(contact_ids), 200):
             batch = contact_ids[i : i + 200]
             id_list = "','".join(batch)
-            soql = (
-                f"SELECT pi__Contact__c, pi__Scoring_Category_Name__c, pi__Score__c "
-                f"FROM pi__Category_Contact_Score__c WHERE pi__Contact__c IN ('{id_list}')"
-            )
+            soql = f"SELECT pi__Contact__c, pi__Scoring_Category_Name__c, pi__Score__c FROM pi__Category_Contact_Score__c WHERE pi__Contact__c IN ('{id_list}')"  # noqa: S608
             try:
                 result = sf.query_all(soql)
             except Exception as e:
@@ -467,10 +461,7 @@ class SyncEngine:
         for i in range(0, len(sf_ids), 50):
             batch = sf_ids[i : i + 50]
             id_list = "','".join(batch)
-            soql = (
-                f"SELECT CampaignId, HasResponded, LeadId, ContactId "
-                f"FROM CampaignMember WHERE CampaignId IN ('{id_list}')"
-            )
+            soql = f"SELECT CampaignId, HasResponded, LeadId, ContactId FROM CampaignMember WHERE CampaignId IN ('{id_list}')"  # noqa: S608
             try:
                 result = sf.query_all(soql)
             except Exception as e:
@@ -553,11 +544,7 @@ class SyncEngine:
         for i in range(0, len(sf_ids), 50):
             batch = sf_ids[i : i + 50]
             id_list = "','".join(batch)
-            soql = (
-                f"SELECT Id, CampaignId, LeadId, ContactId, Status, "
-                f"HasResponded, CreatedDate, FirstRespondedDate "
-                f"FROM CampaignMember WHERE CampaignId IN ('{id_list}')"
-            )
+            soql = f"SELECT Id, CampaignId, LeadId, ContactId, Status, HasResponded, CreatedDate, FirstRespondedDate FROM CampaignMember WHERE CampaignId IN ('{id_list}')"  # noqa: S608
             try:
                 result = sf.query_all(soql)
             except Exception as e:
@@ -661,7 +648,7 @@ class SyncEngine:
                 cols += ["campaigns_with_members", "campaigns_no_members_snap"]
                 vals += [cm_row["with_members"] or 0, cm_row["no_members"] or 0]
             except Exception:
-                pass  # Table may not exist yet
+                log.debug("campaign_member_counts table may not exist yet")
 
             # Tier 2: prospect sample stats
             if tier >= 2:
@@ -783,7 +770,7 @@ class SyncEngine:
                 INSERT INTO daily_snapshots ({col_names})
                 VALUES ({placeholders})
                 ON CONFLICT (snapshot_date) DO UPDATE SET {updates}
-            """,
+            """,  # noqa: S608
                 vals,
             )
 
@@ -939,7 +926,7 @@ class SyncEngine:
             INSERT INTO prospects ({col_names})
             VALUES ({placeholders})
             ON CONFLICT (id) DO UPDATE SET {updates}, cached_at = NOW()
-        """
+        """  # noqa: S608
         with get_cursor(self.conn) as cur:
             for row in rows:
                 cur.execute(sql, [row.get(c) for c in cols])
@@ -951,7 +938,7 @@ class SyncEngine:
         cols = list(rows[0].keys())
         col_names = ", ".join(cols)
         placeholders = ", ".join(["%s"] * len(cols))
-        sql = f"INSERT INTO visitor_activities ({col_names}) VALUES ({placeholders}) ON CONFLICT (id) DO NOTHING"
+        sql = f"INSERT INTO visitor_activities ({col_names}) VALUES ({placeholders}) ON CONFLICT (id) DO NOTHING"  # noqa: S608
         with get_cursor(self.conn) as cur:
             for row in rows:
                 cur.execute(sql, [row.get(c) for c in cols])
@@ -1089,7 +1076,7 @@ class SyncEngine:
     def _purge_stale_rows(self, table: str, seen_ids: set) -> int:
         """Delete rows from table whose IDs were not seen during a full sync."""
         with get_cursor(self.conn) as cur:
-            cur.execute(f"SELECT id FROM {table}")
+            cur.execute(f"SELECT id FROM {table}")  # noqa: S608
             db_ids = {row["id"] for row in cur.fetchall()}
         stale_ids = db_ids - seen_ids
         if not stale_ids:
@@ -1099,7 +1086,7 @@ class SyncEngine:
             stale_list = list(stale_ids)
             for i in range(0, len(stale_list), 500):
                 batch = stale_list[i : i + 500]
-                cur.execute(f"DELETE FROM {table} WHERE id = ANY(%s)", (batch,))
+                cur.execute(f"DELETE FROM {table} WHERE id = ANY(%s)", (batch,))  # noqa: S608
         log.info(f"Purged {len(stale_ids)} stale rows from {table}.")
         return len(stale_ids)
 
@@ -1115,7 +1102,7 @@ class SyncEngine:
             INSERT INTO {table} ({col_names})
             VALUES ({placeholders})
             ON CONFLICT (id) DO UPDATE SET {updates}, cached_at = NOW()
-        """
+        """  # noqa: S608
         with get_cursor(self.conn) as cur:
             for row in rows:
                 cur.execute(sql, [row.get(c) for c in cols])

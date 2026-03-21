@@ -448,7 +448,7 @@ def generate_digest(conn, team=None) -> str:
             )
             lines.append("")
     except Exception:
-        pass
+        log.debug("Tag review skipped")
 
     # ── Triage Progress ───────────────────────────────────────
     try:
@@ -539,7 +539,7 @@ def generate_progress_report(conn) -> str:
             scores_only = [s[1] for s in scored]
             lo, hi = min(scores_only), max(scores_only)
             bars = "  "
-            for dt, sc in scored:
+            for _dt, sc in scored:
                 # Simple ASCII bar: map score to block chars
                 if hi == lo:
                     bars += "\u2588"
@@ -747,7 +747,7 @@ def generate_progress_report(conn) -> str:
                 parts = [f"{r['assignee']}: {r['done']} done, {r['open']} open" for r in person_tasks]
                 lines.append(f"  {'  |  '.join(parts)}")
         except Exception:
-            pass
+            log.debug("Task progress section skipped")
         lines.append("")
 
     # ── Prospect Sync Health Trend ────────────────────────────
@@ -755,7 +755,7 @@ def generate_progress_report(conn) -> str:
         psh = get_prospect_sync_health(conn)
         if psh and psh.get("active", 0) > 0:
             # Check if first snapshot had prospect data too
-            first_prospect_count = first.get("prospect_count")
+            _first_prospect_count = first.get("prospect_count")
             latest_link_rate = psh.get("link_rate")
             if latest_link_rate is not None:
                 lines.append("PROSPECT SYNC HEALTH")

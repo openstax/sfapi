@@ -263,7 +263,7 @@ def get_team(conn) -> list:
                 if rows:
                     return [dict(r) for r in rows]
         except Exception:
-            pass
+            log.debug("team_members table may not exist yet")
         return list(DEFAULT_TEAM)
 
     return _cached("team", _load)

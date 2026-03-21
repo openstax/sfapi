@@ -92,14 +92,14 @@ class _DictCursorWrapper:
         row = self._cursor.fetchone()
         if row is None:
             return None
-        return dict(zip([col[0] for col in self._cursor.description], row))
+        return dict(zip([col[0] for col in self._cursor.description], row, strict=False))
 
     def fetchall(self):
         rows = self._cursor.fetchall()
         if not rows:
             return []
         cols = [col[0] for col in self._cursor.description]
-        return [dict(zip(cols, row)) for row in rows]
+        return [dict(zip(cols, row, strict=False)) for row in rows]
 
     def close(self):
         self._cursor.close()

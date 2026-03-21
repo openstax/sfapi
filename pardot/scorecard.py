@@ -242,7 +242,7 @@ def compute_health_score(conn) -> dict:
     with get_cursor(conn) as cur:
         for area, table in area_table.items():
             try:
-                cur.execute(f"SELECT COUNT(*) AS n FROM {table}")
+                cur.execute(f"SELECT COUNT(*) AS n FROM {table}")  # noqa: S608
                 n = cur.fetchone()["n"]
             except Exception:
                 n = 0
@@ -321,7 +321,6 @@ def generate_issues(conn, team=None) -> list:
     total_w = sum(a.get("weight", 1) for a in by_area.values()) if by_area else 1
 
     issues = []
-    priority_order = {"high": 0, "normal": 1, "low": 2}
 
     for key, template in issue_templates.items():
         count = counts.get(key, 0)

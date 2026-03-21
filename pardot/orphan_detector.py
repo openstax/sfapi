@@ -96,7 +96,7 @@ def find_pardot_orphans_missing_crm(sf, conn) -> list[dict]:
 
     for batch in chunk_list(lead_ids, BATCH_SIZE):
         id_list = "','".join(batch)
-        results = sf.query_all(f"SELECT Id FROM Lead WHERE Id IN ('{id_list}')")
+        results = sf.query_all(f"SELECT Id FROM Lead WHERE Id IN ('{id_list}')")  # noqa: S608
         valid_sf_ids.update(r["Id"] for r in results["records"])
         batch_num += 1
         if batch_num % 50 == 0:
@@ -104,7 +104,7 @@ def find_pardot_orphans_missing_crm(sf, conn) -> list[dict]:
 
     for batch in chunk_list(contact_ids, BATCH_SIZE):
         id_list = "','".join(batch)
-        results = sf.query_all(f"SELECT Id FROM Contact WHERE Id IN ('{id_list}')")
+        results = sf.query_all(f"SELECT Id FROM Contact WHERE Id IN ('{id_list}')")  # noqa: S608
         valid_sf_ids.update(r["Id"] for r in results["records"])
         batch_num += 1
         if batch_num % 50 == 0:
@@ -114,10 +114,10 @@ def find_pardot_orphans_missing_crm(sf, conn) -> list[dict]:
         id_list = "','".join(batch)
         for obj in ["Lead", "Contact"]:
             try:
-                results = sf.query_all(f"SELECT Id FROM {obj} WHERE Id IN ('{id_list}')")
+                results = sf.query_all(f"SELECT Id FROM {obj} WHERE Id IN ('{id_list}')")  # noqa: S608
                 valid_sf_ids.update(r["Id"] for r in results["records"])
             except Exception:
-                pass
+                log.debug("Query for %s IDs failed, skipping", obj)
         batch_num += 1
         if batch_num % 50 == 0:
             _log_batch_progress(batch_num, total_batches, t0)
@@ -163,7 +163,7 @@ def find_sf_orphans_missing_pardot(sf, conn) -> list[dict]:
                 SELECT Id, Email, FirstName, LastName, {pardot_field}
                 FROM {obj_type}
                 WHERE {pardot_field} != null
-            """
+            """  # noqa: S608
             results = sf.query_all(query)
         except Exception as e:
             log.warning(f"Could not query {obj_type}.{pardot_field}: {e}")
@@ -210,7 +210,7 @@ def find_unlinked_prospects(conn) -> tuple[int, list[dict]]:
     """
 
     with get_cursor(conn) as cur:
-        cur.execute(f"SELECT COUNT(*) AS n FROM prospects {unlinked_filter}")
+        cur.execute(f"SELECT COUNT(*) AS n FROM prospects {unlinked_filter}")  # noqa: S608
         total = cur.fetchone()["n"]
 
         cur.execute(f"""
@@ -218,7 +218,7 @@ def find_unlinked_prospects(conn) -> tuple[int, list[dict]]:
             FROM prospects {unlinked_filter}
             ORDER BY score DESC NULLS LAST
             LIMIT 500
-        """)
+        """)  # noqa: S608
         top_500 = [dict(row) for row in cur.fetchall()]
 
     log.info(f"Found {total} Pardot prospects with NO CRM link.")
