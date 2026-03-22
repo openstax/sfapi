@@ -396,8 +396,8 @@ def api_tasks_create(request):
     with get_cursor() as cur:
         cur.execute(
             """
-            INSERT INTO tasks (assignee, title, description, area, asset_type, asset_id, asset_name, priority, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO tasks (assignee, title, description, area, asset_type, asset_id, asset_name, priority, created_by, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
             RETURNING *
         """,
             (
@@ -493,8 +493,8 @@ def api_issue_create_task(request, key: str):
     with get_cursor() as cur:
         cur.execute(
             """
-            INSERT INTO tasks (assignee, title, description, area, priority, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO tasks (assignee, title, description, area, priority, created_by, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
             RETURNING *
         """,
             (assignee, issue["title"], issue["description"], issue["area"], issue["priority"], "scorecard"),
@@ -588,8 +588,8 @@ def api_admin_team_put(request):
                 continue
             cur.execute(
                 """
-                INSERT INTO team_members (name, role, owns, label, sort_order, updated_at)
-                VALUES (%s, %s, %s, %s, %s, NOW())
+                INSERT INTO team_members (name, role, owns, label, sort_order, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
             """,
                 (name, member.get("role", ""), member.get("owns", []), member.get("label", ""), i),
             )

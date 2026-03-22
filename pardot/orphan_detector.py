@@ -247,8 +247,8 @@ def run(sf, conn) -> dict:
     with get_cursor(conn) as cur:
         cur.execute(
             """
-            INSERT INTO orphan_runs (pardot_missing_crm, sf_missing_pardot, unlinked_prospects, details_json)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO orphan_runs (run_at, pardot_missing_crm, sf_missing_pardot, unlinked_prospects, details_json)
+            VALUES (NOW(), %s, %s, %s, %s)
         """,
             (len(pardot_orphans), len(sf_orphans), unlinked_count, json.dumps(details, default=str)),
         )

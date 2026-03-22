@@ -421,8 +421,8 @@ class SyncEngine:
         with get_cursor(conn) as cur:
             cur.execute(
                 """
-                INSERT INTO sf_health (total_leads, total_contacts, leads_with_pardot, contacts_with_pardot)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO sf_health (captured_at, total_leads, total_contacts, leads_with_pardot, contacts_with_pardot)
+                VALUES (NOW(), %s, %s, %s, %s)
             """,
                 (
                     counts["total_leads"],
@@ -919,8 +919,9 @@ class SyncEngine:
         if not rows:
             return 0
         cols = list(rows[0].keys())
-        placeholders = ", ".join(["%s"] * len(cols))
-        col_names = ", ".join(cols)
+        all_cols = cols + ["cached_at"]
+        placeholders = ", ".join(["%s"] * len(cols)) + ", NOW()"
+        col_names = ", ".join(all_cols)
         updates = ", ".join(f"{c} = EXCLUDED.{c}" for c in cols if c != "id")
         sql = f"""
             INSERT INTO prospects ({col_names})
@@ -936,8 +937,9 @@ class SyncEngine:
         if not rows:
             return 0
         cols = list(rows[0].keys())
-        col_names = ", ".join(cols)
-        placeholders = ", ".join(["%s"] * len(cols))
+        all_cols = cols + ["cached_at"]
+        col_names = ", ".join(all_cols)
+        placeholders = ", ".join(["%s"] * len(cols)) + ", NOW()"
         sql = f"INSERT INTO visitor_activities ({col_names}) VALUES ({placeholders}) ON CONFLICT (id) DO NOTHING"  # noqa: S608
         with get_cursor(self.conn) as cur:
             for row in rows:
